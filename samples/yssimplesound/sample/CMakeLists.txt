@@ -1,0 +1,11 @@
+set(TARGET_NAME "yssimplesound_sample")
+add_executable(${TARGET_NAME} main.cpp)
+target_link_libraries(${TARGET_NAME} fssimplewindow yssimplesound)
+
+if(MSVC)
+	target_link_libraries(${TARGET_NAME} yssimplesound_dsound)
+elseif(APPLE)
+	target_link_libraries(${TARGET_NAME} yssimplesound_macosx)
+elseif(UNIX)
+	target_link_libraries(${TARGET_NAME} yssimplesound_linux_alsa)
+endif()

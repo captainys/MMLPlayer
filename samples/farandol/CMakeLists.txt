@@ -1,0 +1,2 @@
+add_executable(farandol farandol.cpp)
+target_link_libraries(farandol mmlplayer yssimplesound yssimplesound_nownd)
