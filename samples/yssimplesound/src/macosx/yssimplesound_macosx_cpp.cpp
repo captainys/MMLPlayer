@@ -10,18 +10,16 @@ extern "C" void YsSimpleSound_OSX_DeleteAudioEngine(struct YsAVAudioEngine *engi
 
 
 
-struct YsNSSound;
-
-extern "C" struct YsNSSound *YsSimpleSound_OSX_CreateSound(long long int size,const unsigned char wavByteData[]);
-extern "C" void YsSimpleSound_OSX_DeleteSound(struct YsNSSound *ptr);
-extern "C" void YsSimpleSound_OSX_PlayOneShot(struct YsNSSound *ptr);
-extern "C" void YsSimpleSound_OSX_PlayBackground(struct YsNSSound *ptr);
-extern "C" void YsSimpleSound_OSX_SetVolume(struct YsNSSound *ptr,float vol);
-extern "C" void YsSimpleSound_OSX_Stop(struct YsNSSound *ptr);
-extern "C" void YsSimpleSound_OSX_Pause(struct YsNSSound *ptr);
-extern "C" void YsSimpleSound_OSX_Resume(struct YsNSSound *ptr);
-extern "C" bool YsSimpleSound_OSX_IsPlaying(struct YsNSSound *ptr);
-extern "C" double YsSimpleSound_OSX_GetCurrentPosition(struct YsNSSound *ptr);
+extern "C" struct YsAVSound *YsSimpleSound_OSX_CreateSound(struct YsAVAudioEngine *engineInfoPtr,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels);
+extern "C" void YsSimpleSound_OSX_DeleteSound(struct YsAVSound *ptr);
+extern "C" void YsSimpleSound_OSX_PlayOneShot(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern "C" void YsSimpleSound_OSX_PlayBackground(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern "C" void YsSimpleSound_OSX_SetVolume(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr,float vol);
+extern "C" void YsSimpleSound_OSX_Stop(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern "C" void YsSimpleSound_OSX_Pause(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern "C" void YsSimpleSound_OSX_Resume(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern "C" bool YsSimpleSound_OSX_IsPlaying(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern "C" double YsSimpleSound_OSX_GetCurrentPosition(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
 
 
 
@@ -44,7 +42,7 @@ public:
 	~APISpecificDataPerSoundData();
 	void CleanUp(void);
 
-	YsNSSound *sndPtr;
+	YsAVSound *sndPtr;
 };
 
 
@@ -116,8 +114,8 @@ YSRESULT YsSoundPlayer::PlayOneShotAPISpecific(SoundData &dat)
 {
 	if(nullptr!=dat.api->sndPtr)
 	{
-		YsSimpleSound_OSX_SetVolume(dat.api->sndPtr,dat.playBackVolume);
-		YsSimpleSound_OSX_PlayOneShot(dat.api->sndPtr);
+		YsSimpleSound_OSX_SetVolume(api->enginePtr,dat.api->sndPtr,dat.playBackVolume);
+		YsSimpleSound_OSX_PlayOneShot(api->enginePtr,dat.api->sndPtr);
 		return YSOK;
 	}
 	return YSERR;
@@ -127,8 +125,8 @@ YSRESULT YsSoundPlayer::PlayBackgroundAPISpecific(SoundData &dat)
 {
 	if(nullptr!=dat.api->sndPtr)
 	{
-		YsSimpleSound_OSX_SetVolume(dat.api->sndPtr,dat.playBackVolume);
-		YsSimpleSound_OSX_PlayBackground(dat.api->sndPtr);
+		YsSimpleSound_OSX_SetVolume(api->enginePtr,dat.api->sndPtr,dat.playBackVolume);
+		YsSimpleSound_OSX_PlayBackground(api->enginePtr,dat.api->sndPtr);
 		return YSOK;
 	}
 	return YSERR;
@@ -136,7 +134,7 @@ YSRESULT YsSoundPlayer::PlayBackgroundAPISpecific(SoundData &dat)
 
 YSBOOL YsSoundPlayer::IsPlayingAPISpecific(const SoundData &dat) const
 {
-	if(nullptr!=dat.api->sndPtr && YsSimpleSound_OSX_IsPlaying(dat.api->sndPtr))
+	if(nullptr!=dat.api->sndPtr && YsSimpleSound_OSX_IsPlaying(api->enginePtr,dat.api->sndPtr))
 	{
 		return YSTRUE;
 	}
@@ -147,7 +145,7 @@ double YsSoundPlayer::GetCurrentPositionAPISpecific(const SoundData &dat) const
 {
 	if(nullptr!=dat.api->sndPtr)
 	{
-		return YsSimpleSound_OSX_GetCurrentPosition(dat.api->sndPtr);
+		return YsSimpleSound_OSX_GetCurrentPosition(api->enginePtr,dat.api->sndPtr);
 	}
 	return 0.0;
 }
@@ -156,7 +154,7 @@ void YsSoundPlayer::StopAPISpecific(SoundData &dat)
 {
 	if(nullptr!=dat.api->sndPtr)
 	{
-		YsSimpleSound_OSX_Stop(dat.api->sndPtr);
+		YsSimpleSound_OSX_Stop(api->enginePtr,dat.api->sndPtr);
 	}
 }
 
@@ -164,7 +162,7 @@ void YsSoundPlayer::PauseAPISpecific(SoundData &dat)
 {
 	if(nullptr!=dat.api->sndPtr)
 	{
-		YsSimpleSound_OSX_Pause(dat.api->sndPtr);
+		YsSimpleSound_OSX_Pause(api->enginePtr,dat.api->sndPtr);
 	}
 }
 
@@ -172,7 +170,7 @@ void YsSoundPlayer::ResumeAPISpecific(SoundData &dat)
 {
 	if(nullptr!=dat.api->sndPtr)
 	{
-		YsSimpleSound_OSX_Resume(dat.api->sndPtr);
+		YsSimpleSound_OSX_Resume(api->enginePtr,dat.api->sndPtr);
 	}
 }
 
@@ -180,7 +178,7 @@ void YsSoundPlayer::SetVolumeAPISpecific(SoundData &dat,float vol)
 {
 	if(nullptr!=dat.api->sndPtr)
 	{
-		YsSimpleSound_OSX_SetVolume(dat.api->sndPtr,vol);
+		YsSimpleSound_OSX_SetVolume(api->enginePtr,dat.api->sndPtr,vol);
 	}
 }
 
@@ -219,8 +217,9 @@ YSRESULT YsSoundPlayer::SoundData::PreparePlay(YsSoundPlayer &player)
 {
 	if(nullptr==api->sndPtr)
 	{
-		auto byteData=MakeWavByteData();
-		api->sndPtr=YsSimpleSound_OSX_CreateSound(byteData.size(),byteData.data());
+
+
+		api->sndPtr=YsSimpleSound_OSX_CreateSound(player.api->enginePtr,dat.size(),dat.data(),PlayBackRate(),GetNumChannel());
 		if(nullptr!=api->sndPtr)
 		{
 			return YSOK;

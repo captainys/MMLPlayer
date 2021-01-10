@@ -9,12 +9,12 @@ struct YsAVAudioEngine
     AVAudioEngine *enginePtr;
     AVAudioMixerNode *mixerNodePtr;
     AVAudioPlayerNode *primaryPlayerNodePtr;
-    AVAudioFormat *audioFormatPtr;
+    AVAudioFormat *primaryAudioFormatPtr;
 #else
 	void *enginePtr;
 	void *mixerNodePtr;
 	void *primaryPlayerNodePtr;
-	void *audioFormatPtr;
+	void *primaryAudioFormatPtr;
 #endif
 };
 
@@ -29,14 +29,10 @@ struct YsAVAudioEngine *YsSimpleSound_OSX_CreateAudioEngine(void)
     AVAudioEngine *enginePtr=[[AVAudioEngine alloc] init];
     AVAudioMixerNode *mixerNodePtr=[enginePtr mainMixerNode];
     AVAudioPlayerNode *primaryPlayerNodePtr=[[AVAudioPlayerNode alloc] init];
-
-    /* According to https://developer.apple.com/documentation/avfoundation/avaudioformat/1390416-initstandardformatwithsamplerate?language=objc
-       the returned format always uses AVAudioPCMFormatFloat32.
-    */
-    AVAudioFormat *audioFormatPtr=[[AVAudioFormat alloc] initStandardFormatWithSampleRate:44100 channels:2];
+	AVAudioFormat *primaryAudioFormatPtr=[[AVAudioFormat alloc] initStandardFormatWithSampleRate:44100 channels:2];
 
     [enginePtr attachNode:primaryPlayerNodePtr];
-    [enginePtr connect:primaryPlayerNodePtr to:mixerNodePtr format:audioFormatPtr];
+    [enginePtr connect:primaryPlayerNodePtr to:mixerNodePtr format:primaryAudioFormatPtr];
 
     NSError *err=nil;
     [enginePtr startAndReturnError:&err];
@@ -50,12 +46,12 @@ struct YsAVAudioEngine *YsSimpleSound_OSX_CreateAudioEngine(void)
     engineInfoPtr->enginePtr=enginePtr;
     engineInfoPtr->mixerNodePtr=mixerNodePtr;
 	engineInfoPtr->primaryPlayerNodePtr=primaryPlayerNodePtr;
-	engineInfoPtr->audioFormatPtr=audioFormatPtr;
+	engineInfoPtr->primaryAudioFormatPtr=primaryAudioFormatPtr;
 #else
 	engineInfoPtr->enginePtr=(void *)CFBridgingRetain(enginePtr);
 	engineInfoPtr->mixerNodePtr=(void *)CFBridgingRetain(mixerNodePtr);
 	engineInfoPtr->primaryPlayerNodePtr=(void *)CFBridgingRetain(primaryPlayerNodePtr);
-	engineInfoPtr->audioFormatPtr=(void *)CFBridgingRetain(audioFormatPtr);
+	engineInfoPtr->primaryAudioFormatPtr=(void *)CFBridgingRetain(primaryAudioFormatPtr);
 #endif
 
 	return engineInfoPtr;
@@ -66,160 +62,221 @@ void YsSimpleSound_OSX_DeleteAudioEngine(struct YsAVAudioEngine *engineInfoPtr)
     AVAudioEngine *enginePtr=nil;
     AVAudioMixerNode *mixerNodePtr=nil;
     AVAudioPlayerNode *primaryPlayerNodePtr=nil;
-    AVAudioFormat *audioFormatPtr=nil;
 
 #if !__has_feature(objc_arc)
     enginePtr=engineInfoPtr->enginePtr;
     mixerNodePtr=engineInfoPtr->mixerNodePtr;
 	primaryPlayerNodePtr=engineInfoPtr->primaryPlayerNodePtr;
-	audioFormatPtr=engineInfoPtr->audioFormatPtr;
 #else
 	enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
 	mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
 	primaryPlayerNodePtr=(__bridge AVAudioPlayerNode *)engineInfoPtr->primaryPlayerNodePtr;
-	audioFormatPtr=(__bridge AVAudioFormat *)engineInfoPtr->audioFormatPtr;
 #endif
 
 	[enginePtr detachNode:primaryPlayerNodePtr];
 
 #if !__has_feature(objc_arc)
-	[enginePtr release];
-	[primaryPlayerNodePtr release];
-	[audioFormatPtr release];
+	[engineInfoPtr->enginePtr release];
+	[engineInfoPtr->primaryPlayerNodePtr release];
+	[engineInfoPtr->primaryAudioFormatPtr release];
 #else
 	CFBridgingRelease(engineInfoPtr->enginePtr);
 	CFBridgingRelease(engineInfoPtr->primaryPlayerNodePtr);
-	CFBridgingRelease(engineInfoPtr->audioFormatPtr);
+	CFBridgingRelease(engineInfoPtr->primaryAudioFormatPtr);
 #endif
 
 	free(engineInfoPtr);
 }
 
-struct YsNSSound
+struct YsAVSound
 {
 #if !__has_feature(objc_arc)
-	AVAudioPlayer *snd;
+    AVAudioEngine *enginePtr;
+
+    AVAudioPlayerNode *playerNodePtr;
+    AVAudioPCMBuffer *PCMBufferPtr;
+    AVAudioFormat *audioFormatPtr;
 #else
-	void *snd;
+	void *enginePtr;
+
+	void *playerNodePtr;
+	void *PCMBufferPtr;
+	void *audioFormatPtr;
 #endif
 };
 
 
-extern struct YsNSSound *YsSimpleSound_OSX_CreateSound(long long int size,const unsigned char wavByteData[]);
-extern void YsSimpleSound_OSX_DeleteSound(struct YsNSSound *ptr);
-extern void YsSimpleSound_OSX_PlayOneShot(struct YsNSSound *ptr);
-extern void YsSimpleSound_OSX_PlayBackground(struct YsNSSound *ptr);
-extern void YsSimpleSound_OSX_SetVolume(struct YsNSSound *ptr,float vol);
-extern void YsSimpleSound_OSX_Stop(struct YsNSSound *ptr);
-extern void YsSimpleSound_OSX_Pause(struct YsNSSound *ptr);
-extern void YsSimpleSound_OSX_Resume(struct YsNSSound *ptr);
-extern bool YsSimpleSound_OSX_IsPlaying(struct YsNSSound *ptr);
-extern double YsSimpleSound_OSX_GetCurrentPosition(struct YsNSSound *ptr);
+extern struct YsAVSound *YsSimpleSound_OSX_CreateSound(struct YsAVAudioEngine *engineInfoPtr,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels);
+extern void YsSimpleSound_OSX_DeleteSound(struct YsAVSound *ptr);
+extern void YsSimpleSound_OSX_PlayOneShot(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern void YsSimpleSound_OSX_PlayBackground(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern void YsSimpleSound_OSX_SetVolume(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr,float vol);
+extern void YsSimpleSound_OSX_Stop(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern void YsSimpleSound_OSX_Pause(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern void YsSimpleSound_OSX_Resume(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern bool YsSimpleSound_OSX_IsPlaying(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
+extern double YsSimpleSound_OSX_GetCurrentPosition(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr);
 
 
-struct YsNSSound *YsSimpleSound_OSX_CreateSound(long long int size,const unsigned char wavByteData[])
+struct YsAVSound *YsSimpleSound_OSX_CreateSound(struct YsAVAudioEngine *engineInfoPtr,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels)
 {
-	struct YsNSSound *snd=NULL;
-	NSData *nsData=nil;
-	AVAudioPlayer *soundData=nil;
+	long long int numSamples=sizeInBytes/2;
 
-	snd=(struct YsNSSound *)malloc(sizeof(struct YsNSSound));
-	snd->snd=nil;
 
-	nsData=[NSData dataWithBytes:wavByteData length:size];
-	soundData=[[AVAudioPlayer alloc] initWithData:nsData error:nil];
-	[soundData prepareToPlay];
+    /* According to https://developer.apple.com/documentation/avfoundation/avaudioformat/1390416-initstandardformatwithsamplerate?language=objc
+       the returned format always uses AVAudioPCMFormatFloat32.
+    */
+    AVAudioFormat *audioFormatPtr=[[AVAudioFormat alloc] initStandardFormatWithSampleRate:samplingRate channels:numChannels];
+
+    AVAudioPCMBuffer *PCMBufferPtr=[[AVAudioPCMBuffer alloc] initWithPCMFormat:audioFormatPtr frameCapacity:numSamples];
+    [PCMBufferPtr setFrameLength:numSamples];
+
+    int stride=[PCMBufferPtr stride];
+    for(int ch=0; ch<[audioFormatPtr channelCount]; ++ch)
+    {
+		const unsigned char *channelSrcPtr=wavByteData+2*ch;
+        for(int i=0; i<[PCMBufferPtr frameLength] && i<numSamples; ++i)
+        {
+			int data=(channelSrcPtr[1]<<8)|channelSrcPtr[0];
+			data=(data&0x7FFF)-(data&0x8000);
+            [PCMBufferPtr floatChannelData][ch][i*stride]=(float)data/32768.0f;;
+			channelSrcPtr+=2;
+        }
+    }
+
+    AVAudioPlayerNode *playerNodePtr=[[AVAudioPlayerNode alloc] init];
+
 #if !__has_feature(objc_arc)
-	snd->snd=soundData;
+    AVAudioEngine *enginePtr=engineInfoPtr->enginePtr;
+    AVAudioMixerNode *mixerNodePtr=engineInfoPtr->mixerNodePtr;
 #else
-	snd->snd=(void *)CFBridgingRetain(soundData);
+	AVAudioEngine *enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+	AVAudioMixerNode *mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+#endif
+
+    [enginePtr attachNode:playerNodePtr];
+    [enginePtr connect:playerNodePtr to:mixerNodePtr format:audioFormatPtr];
+
+
+	struct YsAVSound *snd=NULL;
+	snd=(struct YsAVSound *)malloc(sizeof(struct YsAVSound));
+	snd->playerNodePtr=nil;
+	snd->PCMBufferPtr=nil;
+	snd->audioFormatPtr=nil;
+
+#if !__has_feature(objc_arc)
+	snd->enginePtr=enginePtr;
+	snd->playerNodePtr=playerNodePtr;
+	snd->PCMBufferPtr=PCMBufferPtr;
+	snd->audioFormatPtr=audioFormatPtr;
+#else
+	snd->enginePtr=(void*)CFBridgingRetain(enginePtr);
+	snd->playerNodePtr=(void*)CFBridgingRetain(playerNodePtr);
+	snd->PCMBufferPtr=(void*)CFBridgingRetain(PCMBufferPtr);
+	snd->audioFormatPtr=(void*)CFBridgingRetain(audioFormatPtr);
 #endif
 
 	return snd;
 }
 
-void YsSimpleSound_OSX_DeleteSound(struct YsNSSound *ptr)
+void YsSimpleSound_OSX_DeleteSound(struct YsAVSound *ptr)
 {
 #if !__has_feature(objc_arc)
-	[ptr->snd release];
+    AVAudioEngine *enginePtr=ptr->enginePtr;
+	AVAudioPlayerNode *playerNodePtr=ptr->playerNodePtr;
 #else
-	CFBridgingRelease(ptr->snd);
+	AVAudioEngine *enginePtr=(__bridge AVAudioEngine *)ptr->enginePtr;
+	AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)ptr->playerNodePtr;
+#endif
+
+	[enginePtr detachNode:playerNodePtr];
+
+#if !__has_feature(objc_arc)
+	[ptr->playerNodePtr release];
+	[ptr->PCMBufferPtr release];
+	[ptr->audioFormatPtr release];
+#else
+	CFBridgingRelease(ptr->playerNodePtr);
+	CFBridgingRelease(ptr->PCMBufferPtr);
+	CFBridgingRelease(ptr->audioFormatPtr);
 #endif
 	free(ptr);
 }
 
-void YsSimpleSound_OSX_PlayOneShot(struct YsNSSound *ptr)
+void YsSimpleSound_OSX_PlayOneShot(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr)
 {
 	if(nil!=ptr)
 	{
 #if !__has_feature(objc_arc)
-		AVAudioPlayer *snd=ptr->snd;
+	    AVAudioEngine *enginePtr=engineInfoPtr->enginePtr;
+	    AVAudioMixerNode *mixerNodePtr=engineInfoPtr->mixerNodePtr;
+		AVAudioPlayerNode *playerNodePtr=ptr->playerNodePtr;
+		AVAudioPCMBuffer *PCMBufferPtr=ptr->PCMBuffer;
 #else
-		AVAudioPlayer *snd=(__bridge AVAudioPlayer *)(ptr->snd);
+		AVAudioEngine *enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+		AVAudioMixerNode *mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+		AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)ptr->playerNodePtr;
+		AVAudioPCMBuffer *PCMBufferPtr=(__bridge AVAudioPCMBuffer *)ptr->PCMBufferPtr;
 #endif
-		snd.numberOfLoops=0;
-		[snd play];
+
+		[playerNodePtr play];
+	    [playerNodePtr scheduleBuffer:PCMBufferPtr completionHandler:nil];
 	}
 }
 
-void YsSimpleSound_OSX_PlayBackground(struct YsNSSound *ptr)
+void YsSimpleSound_OSX_PlayBackground(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr)
 {
 	if(nil!=ptr)
 	{
 #if !__has_feature(objc_arc)
-		AVAudioPlayer *snd=ptr->snd;
+	    AVAudioEngine *enginePtr=engineInfoPtr->enginePtr;
+	    AVAudioMixerNode *mixerNodePtr=engineInfoPtr->mixerNodePtr;
+		AVAudioPlayerNode *playerNodePtr=ptr->playerNodePtr;
+		AVAudioPCMBuffer *PCMBufferPtr=ptr->PCMBuffer;
 #else
-		AVAudioPlayer *snd=(__bridge AVAudioPlayer *)(ptr->snd);
+		AVAudioEngine *enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+		AVAudioMixerNode *mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+		AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)ptr->playerNodePtr;
+		AVAudioPCMBuffer *PCMBufferPtr=(__bridge AVAudioPCMBuffer *)ptr->PCMBufferPtr;
 #endif
-		snd.numberOfLoops=-1;
-		[snd play];
+
+		[playerNodePtr play];
+	    [playerNodePtr scheduleBuffer:PCMBufferPtr completionHandler:nil];
 	}
 }
 
-void YsSimpleSound_OSX_SetVolume(struct YsNSSound *ptr,float vol)
+void YsSimpleSound_OSX_SetVolume(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr,float vol)
 {
 	if(nil!=ptr)
 	{
-#if !__has_feature(objc_arc)
-		NSSound *snd=ptr->snd;
-#else
-		NSSound *snd=(__bridge NSSound *)(ptr->snd);
-#endif
-		snd.volume=vol;
 	}
 }
 
-void YsSimpleSound_OSX_Stop(struct YsNSSound *ptr)
+void YsSimpleSound_OSX_Stop(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr)
 {
 	if(nil!=ptr)
 	{
-#if !__has_feature(objc_arc)
-		NSSound *snd=ptr->snd;
-#else
-		NSSound *snd=(__bridge NSSound *)(ptr->snd);
-#endif
-		[snd stop];
 	}
 }
 
-void YsSimpleSound_OSX_Pause(struct YsNSSound *ptr)
+void YsSimpleSound_OSX_Pause(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr)
 {
 }
 
-void YsSimpleSound_OSX_Resume(struct YsNSSound *ptr)
+void YsSimpleSound_OSX_Resume(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr)
 {
 }
 
-bool YsSimpleSound_OSX_IsPlaying(struct YsNSSound *ptr)
+bool YsSimpleSound_OSX_IsPlaying(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr)
 {
 	if(nil!=ptr)
 	{
 #if !__has_feature(objc_arc)
-		AVAudioPlayer *snd=ptr->snd;
+		AVAudioPlayerNode *playerNodePtr=ptr->playerNodePtr;
 #else
-		AVAudioPlayer *snd=(__bridge AVAudioPlayer *)(ptr->snd);
+		AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)ptr->playerNodePtr;
 #endif
-		if(YES==[snd isPlaying])
+		if(YES==[playerNodePtr isPlaying])
 		{
 			return true;
 		}
@@ -227,16 +284,11 @@ bool YsSimpleSound_OSX_IsPlaying(struct YsNSSound *ptr)
 	return false;
 }
 
-double YsSimpleSound_OSX_GetCurrentPosition(struct YsNSSound *ptr)
+double YsSimpleSound_OSX_GetCurrentPosition(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr)
 {
 	if(nil!=ptr)
 	{
-#if !__has_feature(objc_arc)
-		AVAudioPlayer *snd=ptr->snd;
-#else
-		AVAudioPlayer *snd=(__bridge AVAudioPlayer *)(ptr->snd);
-#endif
-		return [snd currentTime];
+		// Time in seconds.
 	}
 	return 0.0;
 }
