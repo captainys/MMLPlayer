@@ -1,4 +1,5 @@
 #import <Cocoa/Cocoa.h>
+#import <AVFoundation/AVAudioPlayer.h>
 
 
 #ifndef __has_feature
@@ -9,7 +10,7 @@
 struct YsNSSound
 {
 #if !__has_feature(objc_arc)
-	NSSound *snd;
+	AVAudioPlayer *snd;
 #else
 	void *snd;
 #endif
@@ -32,13 +33,14 @@ struct YsNSSound *YsSimpleSound_OSX_CreateSound(long long int size,const unsigne
 {
 	struct YsNSSound *snd=NULL;
 	NSData *nsData=nil;
-	NSSound *soundData=nil;
+	AVAudioPlayer *soundData=nil;
 
 	snd=(struct YsNSSound *)malloc(sizeof(struct YsNSSound));
 	snd->snd=nil;
 
 	nsData=[NSData dataWithBytes:wavByteData length:size];
-	soundData=[[NSSound alloc] initWithData:nsData];
+	soundData=[[AVAudioPlayer alloc] initWithData:nsData error:nil];
+	[soundData prepareToPlay];
 #if !__has_feature(objc_arc)
 	snd->snd=soundData;
 #else
@@ -63,11 +65,11 @@ void YsSimpleSound_OSX_PlayOneShot(struct YsNSSound *ptr)
 	if(nil!=ptr)
 	{
 #if !__has_feature(objc_arc)
-		NSSound *snd=ptr->snd;
+		AVAudioPlayer *snd=ptr->snd;
 #else
-		NSSound *snd=(__bridge NSSound *)(ptr->snd);
+		AVAudioPlayer *snd=(__bridge AVAudioPlayer *)(ptr->snd);
 #endif
-		[snd setLoops:NO];
+		snd.numberOfLoops=0;
 		[snd play];
 	}
 }
@@ -77,11 +79,11 @@ void YsSimpleSound_OSX_PlayBackground(struct YsNSSound *ptr)
 	if(nil!=ptr)
 	{
 #if !__has_feature(objc_arc)
-		NSSound *snd=ptr->snd;
+		AVAudioPlayer *snd=ptr->snd;
 #else
-		NSSound *snd=(__bridge NSSound *)(ptr->snd);
+		AVAudioPlayer *snd=(__bridge AVAudioPlayer *)(ptr->snd);
 #endif
-		[snd setLoops:YES];
+		snd.numberOfLoops=-1;
 		[snd play];
 	}
 }
@@ -125,9 +127,9 @@ bool YsSimpleSound_OSX_IsPlaying(struct YsNSSound *ptr)
 	if(nil!=ptr)
 	{
 #if !__has_feature(objc_arc)
-		NSSound *snd=ptr->snd;
+		AVAudioPlayer *snd=ptr->snd;
 #else
-		NSSound *snd=(__bridge NSSound *)(ptr->snd);
+		AVAudioPlayer *snd=(__bridge AVAudioPlayer *)(ptr->snd);
 #endif
 		if(YES==[snd isPlaying])
 		{
@@ -142,9 +144,9 @@ double YsSimpleSound_OSX_GetCurrentPosition(struct YsNSSound *ptr)
 	if(nil!=ptr)
 	{
 #if !__has_feature(objc_arc)
-		NSSound *snd=ptr->snd;
+		AVAudioPlayer *snd=ptr->snd;
 #else
-		NSSound *snd=(__bridge NSSound *)(ptr->snd);
+		AVAudioPlayer *snd=(__bridge AVAudioPlayer *)(ptr->snd);
 #endif
 		return [snd currentTime];
 	}
