@@ -142,6 +142,12 @@ public:
 	*/
 	void End(void);
 
+	/*! Prepare to play the sound data to reduce latency on PlayOneShot and PlayBackground.
+	    If the using application does not call this function, PlayOneShot and PlayBackground will call
+		this function, but the audio playback may start with some lag.
+	*/
+	void PreparePlay(SoundData &dat);
+
 	/*! Starts play-back without repeat.
 	*/
 	void PlayOneShot(SoundData &dat);
@@ -200,6 +206,8 @@ private:
 	SoundData(const SoundData &);
 	SoundData &operator=(const SoundData &);
 	// Make Uncopiable <<
+
+	bool prepared=false;
 
 	friend class YsSoundPlayer;
 	class APISpecificDataPerSoundData;

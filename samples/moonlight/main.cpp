@@ -432,8 +432,9 @@ int main(void)
 	YsSoundPlayer player;
 	player.Start();
 
-	YsSoundPlayer::SoundData wavData;
-	std::vector <unsigned char> rawWave;
+	bool nextBufferReady=false;
+	unsigned int nextBuffer=0;
+	YsSoundPlayer::SoundData waveBuffer[2];
 
 	FsOpenWindow(0,0,800,600,0);
 	for(;;)
@@ -445,15 +446,18 @@ int main(void)
 			break;
 		}
 
-		if(0==rawWave.size())
+		if(true!=nextBufferReady)
 		{
-			rawWave=mmlplayer.GenerateWave(100);  // Create for next 100ms
+			auto rawWave=mmlplayer.GenerateWave(100);  // Create for next 100ms
+			waveBuffer[nextBuffer].CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
+			player.PreparePlay(waveBuffer[nextBuffer]);
+			nextBufferReady=true;
 		}
-		if(YSTRUE!=player.IsPlaying(wavData) && 0<rawWave.size())
+		if(YSTRUE!=player.IsPlaying(waveBuffer[1-nextBuffer]) && true==nextBufferReady)
 		{
-			wavData.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);  // This will empty rawWave.
-			rawWave.clear(); // Just in case.
-			player.PlayOneShot(wavData);
+			player.PlayOneShot(waveBuffer[nextBuffer]);
+			nextBuffer=1-nextBuffer;
+			nextBufferReady=false;
 		}
 	}
 

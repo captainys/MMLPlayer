@@ -131,7 +131,7 @@ void YsSoundPlayer::End(void)
 	*playerStatePtr=STATE_ENDED;
 }
 
-void YsSoundPlayer::PlayOneShot(SoundData &dat)
+void YsSoundPlayer::PreparePlay(SoundData &dat)
 {
 	if(nullptr==dat.playerStatePtr)
 	{
@@ -143,26 +143,26 @@ void YsSoundPlayer::PlayOneShot(SoundData &dat)
 		printf("  YsSoundPlayer::SoundData can be associated with only one player.\n");
 		return;
 	}
-
 	dat.PreparePlay(*this);
+	dat.prepared=true;
+}
+
+void YsSoundPlayer::PlayOneShot(SoundData &dat)
+{
+	if(true!=dat.prepared)
+	{
+		PreparePlay(dat);
+	}
 	if(YSOK==PlayOneShotAPISpecific(dat))
 	{
 	}
 }
 void YsSoundPlayer::PlayBackground(SoundData &dat)
 {
-	if(nullptr==dat.playerStatePtr)
+	if(true!=dat.prepared)
 	{
-		dat.playerStatePtr=this->playerStatePtr;
+		PreparePlay(dat);
 	}
-	else if(dat.playerStatePtr!=this->playerStatePtr)
-	{
-		printf("%s %d\n",__FUNCTION__,__LINE__);
-		printf("  YsSoundPlayer::SoundData can be associated with only one player.\n");
-		return;
-	}
-
-	dat.PreparePlay(*this);
 	if(YSOK==PlayBackgroundAPISpecific(dat))
 	{
 	}
@@ -227,6 +227,8 @@ void YsSoundPlayer::SoundData::CleanUp(void)
 	CleanUpAPISpecific();
 
 	dat.clear();
+
+	prepared=false;
 
 	lastModifiedChannel=0;
 	stereo=YSFALSE;
@@ -525,6 +527,7 @@ YSRESULT YsSoundPlayer::SoundData::ConvertTo16Bit(void)
 	}
 	else if(bit==8)
 	{
+		prepared=false;
 		if(sizeInBytes>0 && 0<dat.size()) // ? Why did I write 0<dat.size()?  2020/04/02
 		{
 			std::vector <unsigned char> newDat;
@@ -552,6 +555,7 @@ YSRESULT YsSoundPlayer::SoundData::ConvertTo8Bit(void)
 	}
 	else if(bit==16)
 	{
+		prepared=false;
 		std::vector <unsigned char> newDat;
 		newDat.resize(sizeInBytes/2);
 		for(int i=0; i<sizeInBytes; i+=2)
@@ -612,6 +616,8 @@ YSRESULT YsSoundPlayer::SoundData::Resample(int newRate)
 {
 	if(rate!=newRate)
 	{
+		prepared=false;
+
 		const size_t nChannel=(YSTRUE==stereo ? 2 : 1);
 		const size_t bytePerSample=bit/8;
 		const size_t bytePerTimeStep=nChannel*bytePerSample;
@@ -696,6 +702,8 @@ YSRESULT YsSoundPlayer::SoundData::ConvertToMono(void)
 {
 	if(YSTRUE==stereo)
 	{
+		prepared=false;
+
 		const size_t bytePerSample=bit/8;
 		const size_t bytePerTimeStep=2*bytePerSample;
 		const size_t nTimeStep=sizeInBytes/bytePerTimeStep;
@@ -730,6 +738,7 @@ YSRESULT YsSoundPlayer::SoundData::ConvertToSigned(void)
 	}
 	else
 	{
+		prepared=false;
 		if(bit==8)
 		{
 			for(int i=0; i<sizeInBytes; i++)
@@ -761,6 +770,7 @@ YSRESULT YsSoundPlayer::SoundData::ConvertToUnsigned(void)
 	}
 	else
 	{
+		prepared=false;
 		if(bit==8)
 		{
 			for(int i=0; i<sizeInBytes; i++)
@@ -791,6 +801,8 @@ YSRESULT YsSoundPlayer::SoundData::DeleteChannel(int channel)
 {
 	if(YSTRUE==stereo)
 	{
+		prepared=false;
+
 		const size_t bytePerSample=bit/8;
 		const size_t bytePerTimeStep=2*bytePerSample;
 		const size_t nTimeStep=sizeInBytes/bytePerTimeStep;
@@ -916,6 +928,7 @@ void YsSoundPlayer::SoundData::SetSignedValue16(int channel,int atTimeStep,int r
 
 	if(sampleIdx+unitSize<=sizeInBytes && 0<=channel && channel<GetNumChannel())
 	{
+		prepared=false;
 		lastModifiedChannel=channel;
 		size_t offset=sampleIdx+channel*BytePerSample();
 		switch(BitPerSample())
@@ -970,6 +983,8 @@ int YsSoundPlayer::SoundData::GetSignedValue16(int channel,int atTimeStep) const
 
 void YsSoundPlayer::SoundData::ResizeByNumSample(long long int nSample)
 {
+	prepared=false;
+
 	long long int newDataSize=nSample*GetNumChannel()*BytePerSample();
 	std::vector <unsigned char> newDat;
 	newDat.resize(newDataSize);
@@ -989,6 +1004,7 @@ void YsSoundPlayer::SoundData::ResizeByNumSample(long long int nSample)
 
 void YsSoundPlayer::SoundData::SetSignedValueRaw(unsigned char *savePtr,int rawSignedValue)
 {
+	prepared=false;
 	switch(bit)
 	{
 	case 8:
