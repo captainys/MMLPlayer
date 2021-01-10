@@ -33,6 +33,8 @@ public:
 	void CleanUp(void);
 	YSRESULT Start(void);
 	YSRESULT End(void);
+
+	YsAVAudioEngine *enginePtr;
 };
 
 class YsSoundPlayer::SoundData::APISpecificDataPerSoundData
@@ -53,6 +55,7 @@ public:
 
 YsSoundPlayer::APISpecificData::APISpecificData()
 {
+	enginePtr=nullptr;
 	CleanUp();
 }
 YsSoundPlayer::APISpecificData::~APISpecificData()
@@ -62,10 +65,21 @@ YsSoundPlayer::APISpecificData::~APISpecificData()
 
 void YsSoundPlayer::APISpecificData::CleanUp(void)
 {
+	if(nullptr!=enginePtr)
+	{
+		printf("Ending AVAudioEngine.\n");
+		YsSimpleSound_OSX_DeleteAudioEngine(enginePtr);
+		enginePtr=nullptr;
+	}
 }
 
 YSRESULT YsSoundPlayer::APISpecificData::Start(void)
 {
+	if(nullptr==enginePtr)
+	{
+		printf("Starting AVAudioEngine.\n");
+		enginePtr=YsSimpleSound_OSX_CreateAudioEngine();
+	}
 	return YSOK;
 }
 YSRESULT YsSoundPlayer::APISpecificData::End(void)
