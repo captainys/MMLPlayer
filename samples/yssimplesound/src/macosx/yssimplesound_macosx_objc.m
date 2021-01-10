@@ -1,11 +1,99 @@
 #import <Cocoa/Cocoa.h>
-#import <AVFoundation/AVAudioPlayer.h>
+#import <AVFoundation/AVFoundation.h>
 
 
-#ifndef __has_feature
-#define __has_feature(x) 0
+
+struct YsAVAudioEngine
+{
+#if !__has_feature(objc_arc)
+    AVAudioEngine *enginePtr;
+    AVAudioMixerNode *mixerNodePtr;
+    AVAudioPlayerNode *primaryPlayerNodePtr;
+    AVAudioFormat *audioFormatPtr;
+#else
+	void *enginePtr;
+	void *mixerNodePtr;
+	void *primaryPlayerNodePtr;
+	void *audioFormatPtr;
+#endif
+};
+
+extern struct YsAVAudioEngine *YsSimpleSound_OSX_CreateAudioEngine(void);
+extern void YsSimpleSound_OSX_DeleteAudioEngine(struct YsAVAudioEngine *engine);
+
+
+struct YsAVAudioEngine *YsSimpleSound_OSX_CreateAudioEngine(void)
+{
+	struct YsAVAudioEngine *engineInfoPtr=(struct YsAVAudioEngine *)malloc(sizeof(struct YsAVAudioEngine));
+
+    AVAudioEngine *enginePtr=[[AVAudioEngine alloc] init];
+    AVAudioMixerNode *mixerNodePtr=[enginePtr mainMixerNode];
+    AVAudioPlayerNode *primaryPlayerNodePtr=[[AVAudioPlayerNode alloc] init];
+
+    /* According to https://developer.apple.com/documentation/avfoundation/avaudioformat/1390416-initstandardformatwithsamplerate?language=objc
+       the returned format always uses AVAudioPCMFormatFloat32.
+    */
+    AVAudioFormat *audioFormatPtr=[[AVAudioFormat alloc] initStandardFormatWithSampleRate:44100 channels:2];
+
+    [enginePtr attachNode:primaryPlayerNodePtr];
+    [enginePtr connect:primaryPlayerNodePtr to:mixerNodePtr format:audioFormatPtr];
+
+    NSError *err=nil;
+    [enginePtr startAndReturnError:&err];
+    if(nil!=err)
+    {
+        printf("Error %ld\n",[err code]);
+        printf("%s\n",[[err localizedDescription] UTF8String]);
+    }
+
+#if !__has_feature(objc_arc)
+    engineInfoPtr->enginePtr=enginePtr;
+    engineInfoPtr->mixerNodePtr=mixerNodePtr;
+	engineInfoPtr->primaryPlayerNodePtr=primaryPlayerNodePtr;
+	engineInfoPtr->audioFormatPtr=audioFormatPtr;
+#else
+	engineInfoPtr->enginePtr=(void *)CFBridgingRetain(enginePtr);
+	engineInfoPtr->mixerNodePtr=(void *)CFBridgingRetain(mixerNodePtr);
+	engineInfoPtr->primaryPlayerNodePtr=(void *)CFBridgingRetain(primaryPlayerNodePtr);
+	engineInfoPtr->audioFormatPtr=(void *)CFBridgingRetain(audioFormatPtr);
 #endif
 
+	return engineInfoPtr;
+}
+
+void YsSimpleSound_OSX_DeleteAudioEngine(struct YsAVAudioEngine *engineInfoPtr)
+{
+    AVAudioEngine *enginePtr=nil;
+    AVAudioMixerNode *mixerNodePtr=nil;
+    AVAudioPlayerNode *primaryPlayerNodePtr=nil;
+    AVAudioFormat *audioFormatPtr=nil;
+
+#if !__has_feature(objc_arc)
+    enginePtr=engineInfoPtr->enginePtr;
+    mixerNodePtr=engineInfoPtr->mixerNodePtr;
+	primaryPlayerNodePtr=engineInfoPtr->primaryPlayerNodePtr;
+	audioFormatPtr=engineInfoPtr->audioFormatPtr;
+#else
+	enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+	mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+	primaryPlayerNodePtr=(__bridge AVAudioPlayerNode *)engineInfoPtr->primaryPlayerNodePtr;
+	audioFormatPtr=(__bridge AVAudioFormat *)engineInfoPtr->audioFormatPtr;
+#endif
+
+	[enginePtr detachNode:primaryPlayerNodePtr];
+
+#if !__has_feature(objc_arc)
+	[enginePtr release];
+	[primaryPlayerNodePtr release];
+	[audioFormatPtr release];
+#else
+	CFBridgingRelease(engineInfoPtr->enginePtr);
+	CFBridgingRelease(engineInfoPtr->primaryPlayerNodePtr);
+	CFBridgingRelease(engineInfoPtr->audioFormatPtr);
+#endif
+
+	free(engineInfoPtr);
+}
 
 struct YsNSSound
 {

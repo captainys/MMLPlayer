@@ -2,6 +2,14 @@
 #include "yssimplesound.h"
 
 
+struct YsAVAudioEngine;
+struct YsAVAudioPlayer;
+
+extern "C" struct YsAVAudioEngine *YsSimpleSound_OSX_CreateAudioEngine(void);
+extern "C" void YsSimpleSound_OSX_DeleteAudioEngine(struct YsAVAudioEngine *engine);
+
+
+
 struct YsNSSound;
 
 extern "C" struct YsNSSound *YsSimpleSound_OSX_CreateSound(long long int size,const unsigned char wavByteData[]);
