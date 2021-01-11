@@ -602,12 +602,10 @@ YSRESULT YsSoundPlayer::StartStreamingAPISpecific(Stream &stream)
 		desc.guid3DAlgorithm=GUID_NULL;
 		if(DS_OK==this->api->dSound8->CreateSoundBuffer(&desc,&stream.api->dSoundBuf,NULL))
 		{
-printf("%s %d\n",__FUNCTION__,__LINE__);
 			DWORD writeBufSize1,writeBufSize2;
 			unsigned char *writeBuf1,*writeBuf2;
 			if(stream.api->dSoundBuf->Lock(0,0,(LPVOID *)&writeBuf1,&writeBufSize1,(LPVOID *)&writeBuf2,&writeBufSize2,DSBLOCK_ENTIREBUFFER)==DS_OK)
 			{
-				// printf("Buffer Locked\n");
 				if(NULL!=writeBuf1)
 				{
 					for(int i=0; i<(int)writeBufSize1; i++)
@@ -685,7 +683,6 @@ YSBOOL YsSoundPlayer::StreamPlayerReadyToAcceptNextSegmentAPISpecific(const Stre
 	{
 		DWORD playCursor,writeCursor;
 		stream.api->dSoundBuf->GetCurrentPosition(&playCursor,&writeCursor);
-
 		// Two segments: Seg0 -> Seg1.
 		// Next data should be written when Seg0 is done.
 		if(stream.api->seg0Start<=stream.api->seg0End)
