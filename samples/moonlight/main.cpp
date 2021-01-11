@@ -429,6 +429,8 @@ int main(void)
 		"","","");
 
 
+	FsOpenWindow(0,0,800,600,0);
+
 	YsSoundPlayer player;
 	player.Start();
 
@@ -439,7 +441,6 @@ int main(void)
 	auto rawWave=mmlplayer.GenerateWave(100);  // Create for next 100ms
 	nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
 
-	FsOpenWindow(0,0,800,600,0);
 	for(;;)
 	{
 		FsPollDevice();

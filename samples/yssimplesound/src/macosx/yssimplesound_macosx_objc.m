@@ -128,8 +128,8 @@ struct YsAVSound *YsSimpleSound_OSX_CreateSound(struct YsAVAudioEngine *engineIn
 {
 	int64_t numSamplesIn=(sizeInBytes/2)/numChannels;
 	int64_t numSamplesOut=numSamplesIn;
-	numSamplesOut*=samplingRate;
-	numSamplesOut/=PLAYBACK_RATE;
+	numSamplesOut*=PLAYBACK_RATE;
+	numSamplesOut/=samplingRate;
 
 
     /* According to https://developer.apple.com/documentation/avfoundation/avaudioformat/1390416-initstandardformatwithsamplerate?language=objc
@@ -534,8 +534,8 @@ int YsSimpleSound_OSX_AddNextStreamingSegment(struct YsAVAudioEngine *engineInfo
 		// That's a failed concept.  Objective-C should be killed.  But, Swift is evil as well.
 		int64_t numSamplesIn=(sizeInBytes/2)/numChannels;
 		int64_t numSamplesOut=numSamplesIn;
-		numSamplesOut*=samplingRate;
-		numSamplesOut/=PLAYBACK_RATE;
+		numSamplesOut*=PLAYBACK_RATE;
+		numSamplesOut/=samplingRate;
 
 		AVAudioPCMBuffer *PCMBufferPtr=[[AVAudioPCMBuffer alloc] initWithPCMFormat:audioFormat frameCapacity:numSamplesOut];
 		[PCMBufferPtr setFrameLength:numSamplesOut];
