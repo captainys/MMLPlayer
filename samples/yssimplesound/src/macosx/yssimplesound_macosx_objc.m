@@ -90,6 +90,8 @@ void YsSimpleSound_OSX_DeleteAudioEngine(struct YsAVAudioEngine *engineInfoPtr)
 
 struct YsAVSound
 {
+	int bufferCount;
+
 #if !__has_feature(objc_arc)
     AVAudioEngine *enginePtr;
 
@@ -163,6 +165,7 @@ struct YsAVSound *YsSimpleSound_OSX_CreateSound(struct YsAVAudioEngine *engineIn
 	snd->playerNodePtr=nil;
 	snd->PCMBufferPtr=nil;
 	snd->audioFormatPtr=nil;
+	snd->bufferCount=0;
 
 #if !__has_feature(objc_arc)
 	snd->enginePtr=enginePtr;
@@ -203,6 +206,14 @@ void YsSimpleSound_OSX_DeleteSound(struct YsAVSound *ptr)
 	free(ptr);
 }
 
+/* For future reference.  Lambda in Objective-C.  Another failure of Objective-C.
+void (^YsAVPlayerCompletion)()=^()
+{
+	printf("Objective-C go to hell.\n");
+};
+See also http://fuckingblocksyntax.com/
+*/
+
 void YsSimpleSound_OSX_PlayOneShot(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSound *ptr)
 {
 	if(nil!=ptr)
@@ -220,7 +231,17 @@ void YsSimpleSound_OSX_PlayOneShot(struct YsAVAudioEngine *engineInfoPtr,struct 
 #endif
 
 		[playerNodePtr play];
-	    [playerNodePtr scheduleBuffer:PCMBufferPtr completionHandler:nil];
+	    /* The following line won't give an error, but not useful.
+		[playerNodePtr scheduleBuffer:PCMBufferPtr completionHandler:YsAVPlayerCompletion()]; 
+		*/
+
+		++ptr->bufferCount;
+
+		__block struct YsAVSound *soundCopy=ptr;
+	    [playerNodePtr scheduleBuffer:PCMBufferPtr completionHandler:^{
+			// How can I write a captured variable correctly?
+			--soundCopy->bufferCount;
+		}];
 	}
 }
 
@@ -241,7 +262,17 @@ void YsSimpleSound_OSX_PlayBackground(struct YsAVAudioEngine *engineInfoPtr,stru
 #endif
 
 		[playerNodePtr play];
-	    [playerNodePtr scheduleBuffer:PCMBufferPtr completionHandler:nil];
+		++ptr->bufferCount;
+	    [playerNodePtr scheduleBuffer:PCMBufferPtr atTime:nil options:AVAudioPlayerNodeBufferLoops completionHandler:^{
+			/* How can I write a captured variable correctly? ->
+
+			Surprise!  Surprise!
+			According to:
+				https://www.mikeash.com/pyblog/friday-qa-2011-06-03-objective-c-blocks-vs-c0x-lambdas-fight.html
+			automatic reference counting does not apply to the captured variables.
+			Sounds like I cannot stop the player simply by [playerNodePtr stop];
+			*/
+		}];
 	}
 }
 
@@ -256,6 +287,20 @@ void YsSimpleSound_OSX_Stop(struct YsAVAudioEngine *engineInfoPtr,struct YsAVSou
 {
 	if(nil!=ptr)
 	{
+#if !__has_feature(objc_arc)
+	    AVAudioEngine *enginePtr=engineInfoPtr->enginePtr;
+	    AVAudioMixerNode *mixerNodePtr=engineInfoPtr->mixerNodePtr;
+		__block AVAudioPlayerNode *playerNodePtr=ptr->playerNodePtr;
+		AVAudioPCMBuffer *PCMBufferPtr=ptr->PCMBuffer;
+#else
+		AVAudioEngine *enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+		AVAudioMixerNode *mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+		__block AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)ptr->playerNodePtr;
+		AVAudioPCMBuffer *PCMBufferPtr=(__bridge AVAudioPCMBuffer *)ptr->PCMBufferPtr;
+#endif
+
+		[playerNodePtr stop];
+		ptr->bufferCount=0;
 	}
 }
 
@@ -276,7 +321,8 @@ bool YsSimpleSound_OSX_IsPlaying(struct YsAVAudioEngine *engineInfoPtr,struct Ys
 #else
 		AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)ptr->playerNodePtr;
 #endif
-		if(YES==[playerNodePtr isPlaying])
+		// if(YES==[playerNodePtr isPlaying])  <- It didn't help.
+		if(0<ptr->bufferCount)
 		{
 			return true;
 		}
@@ -288,6 +334,19 @@ double YsSimpleSound_OSX_GetCurrentPosition(struct YsAVAudioEngine *engineInfoPt
 {
 	if(nil!=ptr)
 	{
+#if !__has_feature(objc_arc)
+	    AVAudioEngine *enginePtr=engineInfoPtr->enginePtr;
+	    AVAudioMixerNode *mixerNodePtr=engineInfoPtr->mixerNodePtr;
+		__block AVAudioPlayerNode *playerNodePtr=ptr->playerNodePtr;
+		AVAudioPCMBuffer *PCMBufferPtr=ptr->PCMBuffer;
+#else
+		AVAudioEngine *enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+		AVAudioMixerNode *mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+		__block AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)ptr->playerNodePtr;
+		AVAudioPCMBuffer *PCMBufferPtr=(__bridge AVAudioPCMBuffer *)ptr->PCMBufferPtr;
+#endif
+
+
 		// Time in seconds.
 	}
 	return 0.0;

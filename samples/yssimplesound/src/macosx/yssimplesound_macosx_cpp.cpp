@@ -217,8 +217,6 @@ YSRESULT YsSoundPlayer::SoundData::PreparePlay(YsSoundPlayer &player)
 {
 	if(nullptr==api->sndPtr)
 	{
-
-
 		api->sndPtr=YsSimpleSound_OSX_CreateSound(player.api->enginePtr,dat.size(),dat.data(),PlayBackRate(),GetNumChannel());
 		if(nullptr!=api->sndPtr)
 		{
