@@ -91,6 +91,7 @@ void YsSimpleSound_OSX_DeleteAudioEngine(struct YsAVAudioEngine *engineInfoPtr)
 struct YsAVSound
 {
 	int bufferCount;
+	uint64_t samplingRate;
 
 #if !__has_feature(objc_arc)
     AVAudioEngine *enginePtr;
@@ -166,6 +167,7 @@ struct YsAVSound *YsSimpleSound_OSX_CreateSound(struct YsAVAudioEngine *engineIn
 	snd->PCMBufferPtr=nil;
 	snd->audioFormatPtr=nil;
 	snd->bufferCount=0;
+	snd->samplingRate=samplingRate;
 
 #if !__has_feature(objc_arc)
 	snd->enginePtr=enginePtr;
@@ -240,7 +242,10 @@ void YsSimpleSound_OSX_PlayOneShot(struct YsAVAudioEngine *engineInfoPtr,struct 
 		__block struct YsAVSound *soundCopy=ptr;
 	    [playerNodePtr scheduleBuffer:PCMBufferPtr completionHandler:^{
 			// How can I write a captured variable correctly?
-			--soundCopy->bufferCount;
+			if(0<soundCopy->bufferCount)  // Apparently stop method also invokes this completionHandler.
+			{
+				--soundCopy->bufferCount;
+			}
 		}];
 	}
 }
@@ -346,8 +351,10 @@ double YsSimpleSound_OSX_GetCurrentPosition(struct YsAVAudioEngine *engineInfoPt
 		AVAudioPCMBuffer *PCMBufferPtr=(__bridge AVAudioPCMBuffer *)ptr->PCMBufferPtr;
 #endif
 
+		AVAudioTime *t=[playerNodePtr playerTimeForNodeTime:[playerNodePtr lastRenderTime]];
+		uint64_t samplePos=[t sampleTime];
 
-		// Time in seconds.
+		return (double)samplePos/(double)ptr->samplingRate;
 	}
 	return 0.0;
 }
