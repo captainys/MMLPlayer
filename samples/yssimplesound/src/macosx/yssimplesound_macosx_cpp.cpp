@@ -230,3 +230,67 @@ void YsSoundPlayer::SoundData::CleanUpAPISpecific(void)
 {
 	api->CleanUp();
 }
+
+//////////////////////////////////////////////////////////////
+
+struct YsAVAudioStreamPlayer;
+extern "C" struct YsAVAudioStreamPlayer *YsSimpleSound_OSX_CreateStreamPlayer(struct YsAVAudioEngine *engineInfoPtr);
+extern "C" void YsSimpleSound_OSX_DeleteStreamPlayer(struct YsAVAudioStreamPlayer *streamPlayer);
+
+extern "C" int YsSimpleSound_OSX_StartStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer);
+extern "C" void YsSimpleSound_OSX_StopStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer);
+extern "C" int YsSimpleSound_OSX_StreamPlayerReadyToAcceptNextSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer);
+extern "C" int YsSimpleSound_OSX_AddNextStreamingSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels);
+
+class YsSoundPlayer::Stream::APISpecificData
+{
+public:
+	struct YsAVAudioStreamPlayer *streamPlayer=nullptr;
+};
+
+YsSoundPlayer::Stream::APISpecificData *YsSoundPlayer::Stream::CreateAPISpecificData(void)
+{
+	auto apiDataPtr=new APISpecificData;
+	apiDataPtr->streamPlayer=nullptr;
+	return apiDataPtr;
+}
+void YsSoundPlayer::Stream::DeleteAPISpecificData(APISpecificData *api)
+{
+	if(nullptr!=api->streamPlayer)
+	{
+		YsSimpleSound_OSX_DeleteStreamPlayer(api->streamPlayer);
+	}
+	delete api;
+}
+
+YSRESULT YsSoundPlayer::StartStreamingAPISpecific(Stream &stream)
+{
+	if(nullptr==stream.api->streamPlayer)
+	{
+		stream.api->streamPlayer=YsSimpleSound_OSX_CreateStreamPlayer(this->api->enginePtr);
+	}
+	return (YSRESULT)YsSimpleSound_OSX_StartStreaming(this->api->enginePtr,stream.api->streamPlayer);
+}
+void YsSoundPlayer::StopStreamingAPISpecific(Stream &stream)
+{
+	if(nullptr!=stream.api->streamPlayer)
+	{
+		YsSimpleSound_OSX_StopStreaming(this->api->enginePtr,stream.api->streamPlayer);
+	}
+}
+YSBOOL YsSoundPlayer::StreamPlayerReadyToAcceptNextSegmentAPISpecific(const Stream &stream,const SoundData &) const
+{
+	if(nullptr!=stream.api->streamPlayer)
+	{
+		return (YSBOOL)YsSimpleSound_OSX_StreamPlayerReadyToAcceptNextSegment(this->api->enginePtr,stream.api->streamPlayer);
+	}
+	return YSFALSE;
+}
+YSRESULT YsSoundPlayer::AddNextStreamingSegmentAPISpecific(Stream &stream,const SoundData &dat)
+{
+	if(nullptr!=stream.api->streamPlayer)
+	{
+		return (YSRESULT)YsSimpleSound_OSX_AddNextStreamingSegment(this->api->enginePtr,stream.api->streamPlayer,dat.dat.size(),dat.dat.data(),dat.PlayBackRate(),dat.GetNumChannel());
+	}
+	return YSOK;
+}

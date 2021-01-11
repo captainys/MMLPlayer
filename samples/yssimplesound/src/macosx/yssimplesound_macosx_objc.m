@@ -32,7 +32,7 @@ struct YsAVAudioEngine *YsSimpleSound_OSX_CreateAudioEngine(void)
     AVAudioEngine *enginePtr=[[AVAudioEngine alloc] init];
     AVAudioMixerNode *mixerNodePtr=[enginePtr mainMixerNode];
     AVAudioPlayerNode *primaryPlayerNodePtr=[[AVAudioPlayerNode alloc] init];
-	AVAudioFormat *primaryAudioFormatPtr=[[AVAudioFormat alloc] initStandardFormatWithSampleRate:44100 channels:2];
+	AVAudioFormat *primaryAudioFormatPtr=[[AVAudioFormat alloc] initStandardFormatWithSampleRate:PLAYBACK_RATE channels:PLAYBACK_CHANNELS];
 
     [enginePtr attachNode:primaryPlayerNodePtr];
     [enginePtr connect:primaryPlayerNodePtr to:mixerNodePtr format:primaryAudioFormatPtr];
@@ -370,4 +370,108 @@ double YsSimpleSound_OSX_GetCurrentPosition(struct YsAVAudioEngine *engineInfoPt
 		return (double)samplePos/(double)ptr->samplingRate;
 	}
 	return 0.0;
+}
+
+
+
+struct YsAVAudioStreamPlayer
+{
+	int playingBuffer; // 0 or 1.  1-playingBuffer is stand-by.
+	int numBuffersFilled;
+
+#if !__has_feature(objc_arc)
+    AVAudioEngine *enginePtr;
+
+    AVAudioPlayerNode *playerNodePtr;
+    AVAudioPCMBuffer *PCMBufferPtr[2];
+#else
+	void *enginePtr;
+
+	void *playerNodePtr;
+	void *PCMBufferPtr[2];
+#endif
+};
+
+extern struct YsAVAudioStreamPlayer *YsSimpleSound_OSX_CreateStreamPlayer(struct YsAVAudioEngine *engineInfoPtr);
+extern void YsSimpleSound_OSX_DeleteStreamPlayer(struct YsAVAudioStreamPlayer *streamPlayer);
+
+extern int YsSimpleSound_OSX_StartStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer);
+extern void YsSimpleSound_OSX_StopStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer);
+extern int YsSimpleSound_OSX_StreamPlayerReadyToAcceptNextSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer);
+extern int YsSimpleSound_OSX_AddNextStreamingSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels);
+
+
+struct YsAVAudioStreamPlayer *YsSimpleSound_OSX_CreateStreamPlayer(struct YsAVAudioEngine *engineInfoPtr)
+{
+    AVAudioEngine *enginePtr=nil;
+    AVAudioMixerNode *mixerNodePtr=nil;
+    AVAudioFormat *audioFormatPtr=nil;
+
+#if !__has_feature(objc_arc)
+    enginePtr=engineInfoPtr->enginePtr;
+    mixerNodePtr=engineInfoPtr->mixerNodePtr;
+	audioFormatPtr=engineInfoPtr->primaryAudioFormatPtr;
+#else
+	enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+	mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+	audioFormatPtr=(__bridge AVAudioFormat *)engineInfoPtr->primaryAudioFormatPtr;
+#endif
+
+    AVAudioPlayerNode *playerNodePtr=[[AVAudioPlayerNode alloc] init];
+    [enginePtr attachNode:playerNodePtr];
+    [enginePtr connect:playerNodePtr to:mixerNodePtr format:audioFormatPtr];
+
+	struct YsAVAudioStreamPlayer *streamPlayer=(struct YsAVAudioStreamPlayer *)malloc(sizeof(struct YsAVAudioStreamPlayer));
+
+	streamPlayer->PCMBufferPtr[0]=nil;
+	streamPlayer->PCMBufferPtr[1]=nil;
+
+#if !__has_feature(objc_arc)
+	streamPlayer->enginePtr=enginePtr;
+	streamPlayer->playerNodePtr=playerNodePtr;
+#else
+	streamPlayer->enginePtr=(void*)CFBridgingRetain(enginePtr);
+	streamPlayer->playerNodePtr=(void*)CFBridgingRetain(playerNodePtr);
+#endif
+
+	return streamPlayer;
+}
+void YsSimpleSound_OSX_DeleteStreamPlayer(struct YsAVAudioStreamPlayer *streamPlayer)
+{
+#if !__has_feature(objc_arc)
+	[streamPlayer->playerNodePtr release];
+	for(int i=0; i<2; ++i)
+	{
+		if(nil!=streamPlayer->PCMBufferPtr[i])
+		{
+			[streamPlayer->PCMBufferPtr[i] release];
+		}
+	}
+#else
+	CFBridgingRelease(streamPlayer->playerNodePtr);
+	for(int i=0; i<2; ++i)
+	{
+		if(nil!=streamPlayer->PCMBufferPtr[i])
+		{
+			CFBridgingRelease(streamPlayer->PCMBufferPtr[i]);
+		}
+	}
+#endif
+}
+
+int YsSimpleSound_OSX_StartStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer)
+{
+	return 0;
+}
+void YsSimpleSound_OSX_StopStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer)
+{
+
+}
+int YsSimpleSound_OSX_StreamPlayerReadyToAcceptNextSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer)
+{
+	return 0;
+}
+int YsSimpleSound_OSX_AddNextStreamingSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels)
+{
+	return 0;
 }

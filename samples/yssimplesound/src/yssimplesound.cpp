@@ -167,6 +167,27 @@ void YsSoundPlayer::PlayBackground(SoundData &dat)
 	{
 	}
 }
+
+YSRESULT YsSoundPlayer::StartStreaming(Stream &streamPlayer)
+{
+	return StartStreamingAPISpecific(streamPlayer);
+}
+
+void YsSoundPlayer::StopStreaming(Stream &streamPlayer)
+{
+	StopStreamingAPISpecific(streamPlayer);
+}
+
+YSBOOL YsSoundPlayer::StreamPlayerReadyToAcceptNextSegment(const Stream &streamPlayer,const SoundData &dat) const
+{
+	return StreamPlayerReadyToAcceptNextSegmentAPISpecific(streamPlayer,dat);
+}
+
+YSRESULT YsSoundPlayer::AddNextStreamingSegment(Stream &streamPlayer,const SoundData &dat)
+{
+	return AddNextStreamingSegmentAPISpecific(streamPlayer,dat);
+}
+
 void YsSoundPlayer::Stop(SoundData &dat)
 {
 	StopAPISpecific(dat);
@@ -1134,3 +1155,17 @@ std::vector <unsigned char> YsSoundPlayer::SoundData::MakeWavByteData(void) cons
 	byteData.push_back(buf[0]);
 	byteData.push_back(buf[1]);
 }
+
+
+
+
+YsSoundPlayer::Stream::Stream()
+{
+	api=CreateAPISpecificData();
+}
+YsSoundPlayer::Stream::~Stream()
+{
+	DeleteAPISpecificData(api);
+}
+
+

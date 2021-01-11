@@ -174,6 +174,15 @@ public:
 	*/
 	YSRESULT AddNextStreamingSegment(Stream &streamPlayer,const SoundData &dat);
 
+private:
+	// Written in API-specific source >>
+	YSRESULT StartStreamingAPISpecific(Stream &streamPlayer);
+	void StopStreamingAPISpecific(Stream &streamPlayer);
+	YSBOOL StreamPlayerReadyToAcceptNextSegmentAPISpecific(const Stream &streamPlayer,const SoundData &dat) const;
+	YSRESULT AddNextStreamingSegmentAPISpecific(Stream &streamPlayer,const SoundData &dat);
+	// Written in API-specific source <<
+
+public:
 	/*! Stops play-back.
 	*/
 	void Stop(SoundData &dat);
@@ -422,8 +431,8 @@ private:
 	APISpecificData *api=nullptr;
 
 	// Written in API-specific code
-	void CreateAPISpecificData(void);
-	void DeleteAPISpecificData(void);
+	APISpecificData *CreateAPISpecificData(void);
+	void DeleteAPISpecificData(APISpecificData *);
 
 public:
 	Stream();
