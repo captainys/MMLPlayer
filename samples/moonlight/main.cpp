@@ -432,9 +432,12 @@ int main(void)
 	YsSoundPlayer player;
 	player.Start();
 
-	bool nextBufferReady=false;
-	unsigned int nextBuffer=0;
-	YsSoundPlayer::SoundData waveBuffer[2];
+	YsSoundPlayer::Stream stream;
+	player.StartStreaming(stream);
+
+	YsSoundPlayer::SoundData nextWave;
+	auto rawWave=mmlplayer.GenerateWave(100);  // Create for next 100ms
+	nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
 
 	FsOpenWindow(0,0,800,600,0);
 	for(;;)
@@ -446,18 +449,11 @@ int main(void)
 			break;
 		}
 
-		if(true!=nextBufferReady)
+		if(YSTRUE==player.StreamPlayerReadyToAcceptNextSegment(stream,nextWave))
 		{
+			player.AddNextStreamingSegment(stream,nextWave);
 			auto rawWave=mmlplayer.GenerateWave(100);  // Create for next 100ms
-			waveBuffer[nextBuffer].CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
-			player.PreparePlay(waveBuffer[nextBuffer]);
-			nextBufferReady=true;
-		}
-		if(YSTRUE!=player.IsPlaying(waveBuffer[1-nextBuffer]) && true==nextBufferReady)
-		{
-			player.PlayOneShot(waveBuffer[nextBuffer]);
-			nextBuffer=1-nextBuffer;
-			nextBufferReady=false;
+			nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
 		}
 	}
 
