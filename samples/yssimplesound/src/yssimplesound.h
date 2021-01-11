@@ -98,6 +98,8 @@ public:
 	class SoundData;
 	std::shared_ptr <STATE> playerStatePtr;
 
+	class Stream;
+
 private:
 	class APISpecificData;
 
@@ -155,6 +157,22 @@ public:
 	/*! Starts play-back with repeat.
 	*/
 	void PlayBackground(SoundData &dat);
+
+	/*! Start play as a stream.  Additional 
+	*/
+	YSRESULT StartStreaming(Stream &streamPlayer);
+
+	/*! Stop a stream player.
+	*/
+	void StopStreaming(Stream &streamPlayer);
+
+	/*! Check Stream Player can accept additional segment.
+	*/
+	YSBOOL StreamPlayerReadyToAcceptNextSegment(const Stream &streamPlayer,const SoundData &dat) const;
+
+	/*! Add a next segment to the stream player.
+	*/
+	YSRESULT AddNextStreamingSegment(Stream &streamPlayer,const SoundData &dat);
 
 	/*! Stops play-back.
 	*/
@@ -387,6 +405,29 @@ public:
 private:
 	void CleanUpAPISpecific(void);
 	// Written per API <<
+};
+
+
+class YsSoundPlayer::Stream
+{
+friend class YsSoundPlayer;
+
+private:
+	// Make uncopiable.
+	Stream(const Stream &);
+	Stream &operator=(const Stream &);
+
+	class APISpecificData;
+
+	APISpecificData *api=nullptr;
+
+	// Written in API-specific code
+	void CreateAPISpecificData(void);
+	void DeleteAPISpecificData(void);
+
+public:
+	Stream();
+	~Stream();
 };
 
 

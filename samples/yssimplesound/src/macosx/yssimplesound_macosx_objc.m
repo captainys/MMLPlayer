@@ -3,6 +3,9 @@
 
 
 
+#define PLAYBACK_RATE 44100
+#define PLAYBACK_CHANNELS 2
+
 struct YsAVAudioEngine
 {
 #if !__has_feature(objc_arc)
@@ -123,28 +126,38 @@ extern double YsSimpleSound_OSX_GetCurrentPosition(struct YsAVAudioEngine *engin
 
 struct YsAVSound *YsSimpleSound_OSX_CreateSound(struct YsAVAudioEngine *engineInfoPtr,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels)
 {
-	long long int numSamples=sizeInBytes/2;
+	int64_t numSamplesIn=(sizeInBytes/2)/numChannels;
+	int64_t numSamplesOut=numSamplesIn;
+	numSamplesOut*=samplingRate;
+	numSamplesOut/=PLAYBACK_RATE;
 
 
     /* According to https://developer.apple.com/documentation/avfoundation/avaudioformat/1390416-initstandardformatwithsamplerate?language=objc
        the returned format always uses AVAudioPCMFormatFloat32.
     */
-    AVAudioFormat *audioFormatPtr=[[AVAudioFormat alloc] initStandardFormatWithSampleRate:samplingRate channels:numChannels];
+    AVAudioFormat *audioFormatPtr=[[AVAudioFormat alloc] initStandardFormatWithSampleRate:PLAYBACK_RATE channels:PLAYBACK_CHANNELS];
 
-    AVAudioPCMBuffer *PCMBufferPtr=[[AVAudioPCMBuffer alloc] initWithPCMFormat:audioFormatPtr frameCapacity:numSamples];
-    [PCMBufferPtr setFrameLength:numSamples];
+    AVAudioPCMBuffer *PCMBufferPtr=[[AVAudioPCMBuffer alloc] initWithPCMFormat:audioFormatPtr frameCapacity:numSamplesOut];
+    [PCMBufferPtr setFrameLength:numSamplesOut];
 
     int stride=[PCMBufferPtr stride];
     for(int ch=0; ch<[audioFormatPtr channelCount]; ++ch)
     {
-		const unsigned char *channelSrcPtr=wavByteData+2*ch;
-        for(int i=0; i<[PCMBufferPtr frameLength] && i<numSamples; ++i)
-        {
+		const unsigned char *channelSrcPtr=wavByteData+2*ch*(numChannels-1);
+
+		int64_t balance=0;
+		for(int i=0; i<[PCMBufferPtr frameLength]; ++i)
+		{
 			int data=(channelSrcPtr[1]<<8)|channelSrcPtr[0];
 			data=(data&0x7FFF)-(data&0x8000);
-            [PCMBufferPtr floatChannelData][ch][i*stride]=(float)data/32768.0f;;
-			channelSrcPtr+=2;
-        }
+			[PCMBufferPtr floatChannelData][ch][i*stride]=(float)data/32768.0f;;
+			balance-=samplingRate;
+			while(balance<0)
+			{
+				balance+=PLAYBACK_RATE;
+				channelSrcPtr+=2*numChannels;
+			}
+		}
     }
 
     AVAudioPlayerNode *playerNodePtr=[[AVAudioPlayerNode alloc] init];
