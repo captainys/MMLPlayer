@@ -423,6 +423,8 @@ struct YsAVAudioStreamPlayer *YsSimpleSound_OSX_CreateStreamPlayer(struct YsAVAu
 
 	struct YsAVAudioStreamPlayer *streamPlayer=(struct YsAVAudioStreamPlayer *)malloc(sizeof(struct YsAVAudioStreamPlayer));
 
+	streamPlayer->playingBuffer=0;
+	streamPlayer->numBuffersFilled=0;
 	streamPlayer->PCMBufferPtr[0]=nil;
 	streamPlayer->PCMBufferPtr[1]=nil;
 
@@ -461,17 +463,120 @@ void YsSimpleSound_OSX_DeleteStreamPlayer(struct YsAVAudioStreamPlayer *streamPl
 
 int YsSimpleSound_OSX_StartStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer)
 {
+	if(nil!=streamPlayer)
+	{
+#if !__has_feature(objc_arc)
+	    AVAudioEngine *enginePtr=engineInfoPtr->enginePtr;
+	    AVAudioMixerNode *mixerNodePtr=engineInfoPtr->mixerNodePtr;
+		AVAudioFormat *audioFormat=engineInfoPtr->primaryAudioFormatPtr;
+		AVAudioPlayerNode *playerNodePtr=streamPlayer->playerNodePtr;
+#else
+		AVAudioEngine *enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+		AVAudioMixerNode *mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+		AVAudioFormat *audioFormat=(__bridge AVAudioFormat *)engineInfoPtr->primaryAudioFormatPtr;
+		AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)streamPlayer->playerNodePtr;
+#endif
+		[playerNodePtr play];
+		return 1;
+	}
 	return 0;
 }
 void YsSimpleSound_OSX_StopStreaming(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer)
 {
-
+	if(nil!=streamPlayer)
+	{
+#if !__has_feature(objc_arc)
+	    AVAudioEngine *enginePtr=engineInfoPtr->enginePtr;
+	    AVAudioMixerNode *mixerNodePtr=engineInfoPtr->mixerNodePtr;
+		AVAudioFormat *audioFormat=engineInfoPtr->primaryAudioFormatPtr;
+		AVAudioPlayerNode *playerNodePtr=streamPlayer->playerNodePtr;
+#else
+		AVAudioEngine *enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+		AVAudioMixerNode *mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+		AVAudioFormat *audioFormat=(__bridge AVAudioFormat *)engineInfoPtr->primaryAudioFormatPtr;
+		AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)streamPlayer->playerNodePtr;
+#endif
+		[playerNodePtr stop];
+		streamPlayer->numBuffersFilled=0;
+	}
 }
 int YsSimpleSound_OSX_StreamPlayerReadyToAcceptNextSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer)
 {
+	if(streamPlayer->numBuffersFilled<2)
+	{
+		return 1;
+	}
 	return 0;
 }
 int YsSimpleSound_OSX_AddNextStreamingSegment(struct YsAVAudioEngine *engineInfoPtr,struct YsAVAudioStreamPlayer *streamPlayer,long long int sizeInBytes,const unsigned char wavByteData[],unsigned int samplingRate,unsigned int numChannels)
 {
+	if(nil!=streamPlayer && streamPlayer->numBuffersFilled<2)
+	{
+#if !__has_feature(objc_arc)
+	    AVAudioEngine *enginePtr=engineInfoPtr->enginePtr;
+	    AVAudioMixerNode *mixerNodePtr=engineInfoPtr->mixerNodePtr;
+		AVAudioFormat *audioFormat=engineInfoPtr->primaryAudioFormatPtr;
+		AVAudioPlayerNode *playerNodePtr=streamPlayer->playerNodePtr;
+
+		[streamPlayer->PCMBufferPtr[1-streamPlayer->playingBuffer] release];
+		streamPlayer->PCMBufferPtr[1-streamPlayer->playingBuffer]=nil;
+#else
+		AVAudioEngine *enginePtr=(__bridge AVAudioEngine *)engineInfoPtr->enginePtr;
+		AVAudioMixerNode *mixerNodePtr=(__bridge AVAudioMixerNode *)engineInfoPtr->mixerNodePtr;
+		AVAudioFormat *audioFormat=(__bridge AVAudioFormat *)engineInfoPtr->primaryAudioFormatPtr;
+		AVAudioPlayerNode *playerNodePtr=(__bridge AVAudioPlayerNode *)streamPlayer->playerNodePtr;
+
+		CFBridgingRelease(streamPlayer->PCMBufferPtr[1-streamPlayer->playingBuffer]);
+		streamPlayer->PCMBufferPtr[1-streamPlayer->playingBuffer]=nil;
+#endif
+
+		// Hate to have duplicate code here.  But I'm not sure how ARC works if I make it a function.
+		// That's a failed concept.  Objective-C should be killed.  But, Swift is evil as well.
+		int64_t numSamplesIn=(sizeInBytes/2)/numChannels;
+		int64_t numSamplesOut=numSamplesIn;
+		numSamplesOut*=samplingRate;
+		numSamplesOut/=PLAYBACK_RATE;
+
+		AVAudioPCMBuffer *PCMBufferPtr=[[AVAudioPCMBuffer alloc] initWithPCMFormat:audioFormat frameCapacity:numSamplesOut];
+		[PCMBufferPtr setFrameLength:numSamplesOut];
+
+		int stride=[PCMBufferPtr stride];
+		for(int ch=0; ch<[audioFormat channelCount]; ++ch)
+		{
+			const unsigned char *channelSrcPtr=wavByteData+2*ch*(numChannels-1);
+
+			int64_t balance=0;
+			for(int i=0; i<[PCMBufferPtr frameLength]; ++i)
+			{
+				int data=(channelSrcPtr[1]<<8)|channelSrcPtr[0];
+				data=(data&0x7FFF)-(data&0x8000);
+				[PCMBufferPtr floatChannelData][ch][i*stride]=(float)data/32768.0f;;
+				balance-=samplingRate;
+				while(balance<0)
+				{
+					balance+=PLAYBACK_RATE;
+					channelSrcPtr+=2*numChannels;
+				}
+			}
+		}
+
+#if !__has_feature(objc_arc)
+		streamPlayer->PCMBufferPtr[1-streamPlayer->playingBuffer]=PCMBufferPtr;
+#else
+		streamPlayer->PCMBufferPtr[1-streamPlayer->playingBuffer]=(void*)CFBridgingRetain(PCMBufferPtr);
+#endif
+		streamPlayer->playingBuffer=1-streamPlayer->playingBuffer;
+
+		++streamPlayer->numBuffersFilled;
+
+		__block struct YsAVAudioStreamPlayer *streamCopy=streamPlayer;
+	    [playerNodePtr scheduleBuffer:PCMBufferPtr completionHandler:^{
+			// How can I write a captured variable correctly?
+			if(0<streamCopy->numBuffersFilled)  // Apparently stop method also invokes this completionHandler.
+			{
+				--streamCopy->numBuffersFilled;
+			}
+		}];
+	}
 	return 0;
 }
