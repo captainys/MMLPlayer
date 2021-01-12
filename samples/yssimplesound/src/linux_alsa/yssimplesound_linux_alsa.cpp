@@ -292,37 +292,38 @@ void YsSoundPlayer::APISpecificData::KeepPlaying(void)
 					++nThSound;
 				}
 			}
-std::cout << "a" << std::endl;
 			for(auto &p : playingStream)
 			{
 				// p.ptr is pointer in number of samples (not in number of bytes).
 				if(nullptr!=p.dat)
 				{
+std::cout << "a" << (p.dat->api->playing!=nullptr) << " " << (p.dat->api->standBy!=nullptr) << std::endl;
 					unsigned int writePtr=0;
 					YSBOOL loop=YSFALSE;
-std::cout << "b" << std::endl;
-					if(nullptr!=p.dat->api->playing &&
-					   true==PopulateWriteBuffer(writePtr,p.ptr,p.dat->api->playing,loop,nThSound))
+					if(nullptr!=p.dat->api->playing)
 					{
-						// PopulateWriteBuffer returning true means the buffer is gone to the end.
-						if(nullptr!=p.dat->api->standBy)
+						bool firstBufferDone=PopulateWriteBuffer(writePtr,p.ptr,p.dat->api->playing,loop,nThSound);
+						if(true==firstBufferDone)
 						{
+							// PopulateWriteBuffer returning true means the buffer is gone to the end.
+							if(nullptr!=p.dat->api->standBy)
+							{
 std::cout << "c" << std::endl;
-							PopulateWriteBuffer(writePtr,0,p.dat->api->standBy,loop,nThSound);
-std::cout << "d" << std::endl;
+								PopulateWriteBuffer(writePtr,0,p.dat->api->standBy,loop,nThSound);
+							}
 						}
+						++nThSound;
+						writeBufFilledInNStep=std::max(writePtr,writeBufFilledInNStep);
 					}
-					writeBufFilledInNStep=std::max(writePtr,writeBufFilledInNStep);
-					++nThSound;
 				}
 			}
-std::cout << "e" << std::endl;
+std::cout << "e" << nThSound << std::endl;
 
 			if(0<nThSound)
 			{
 static int ctr=0;
-std::cout << "x" << writeBufFilledInNStep << " " << ctr++ <<  std::endl;
 				int nWritten=snd_pcm_writei(handle,writeBuf,writeBufFilledInNStep);
+std::cout << "x" << writeBufFilledInNStep << " " << nWritten << " " << ctr++ <<  std::endl;
 				if(nWritten==-EAGAIN)
 				{
 				}
@@ -338,13 +339,14 @@ std::cout << "x" << writeBufFilledInNStep << " " << ctr++ <<  std::endl;
 				}
 				else if(0<nWritten)
 				{
+					int outPlaybackRate=this->rate;
 					for(auto &p : playing)
 					{
 						if(nullptr!=p.dat)
 						{
 							if(YSTRUE!=p.loop)
 							{
-								p.ptr+=nWritten;
+								p.ptr+=nWritten*p.dat->PlayBackRate()/outPlaybackRate;
 								if(p.dat->NTimeStep()<=p.ptr)
 								{
 									p.dat=NULL;
@@ -353,7 +355,7 @@ std::cout << "x" << writeBufFilledInNStep << " " << ctr++ <<  std::endl;
 							}
 							else
 							{
-								p.ptr+=nWritten;
+								p.ptr+=nWritten*p.dat->PlayBackRate()/outPlaybackRate;
 								while(p.ptr>=p.dat->NTimeStep())
 								{
 									p.ptr-=p.dat->NTimeStep();
@@ -372,13 +374,13 @@ std::cout << "x" << writeBufFilledInNStep << " " << ctr++ <<  std::endl;
 							}
 							else if(nullptr!=p.dat->api->playing)
 							{
-								p.ptr+=nWritten;
+								p.ptr+=nWritten*p.dat->api->playing->PlayBackRate()/outPlaybackRate;
 								if(p.dat->api->playing->NTimeStep()<=p.ptr)
 								{
 									p.ptr-=p.dat->api->playing->NTimeStep();
 									p.dat->api->playing=p.dat->api->standBy;
 									p.dat->api->standBy=nullptr;
-									if(nullptr!=p.dat->api->standBy && p.ptr<=p.dat->api->standBy->NTimeStep())
+									if(nullptr!=p.dat->api->playing && p.dat->api->playing->NTimeStep()<=p.ptr)
 									{
 										p.dat->api->playing=nullptr;
 										p.ptr=0;
@@ -500,8 +502,8 @@ bool YsSoundPlayer::APISpecificData::PopulateWriteBuffer(unsigned int &writePtr,
 		{
 			for(int outCh=0; outCh<numChannelsOut; ++outCh)
 			{
-				writeBuf[writePtr*bytePerTimeStep+outCh*2  ]=0;
-				writeBuf[writePtr*bytePerTimeStep+outCh*2+1]=0;
+				writeBuf[ptr*bytePerTimeStep+outCh*2  ]=0;
+				writeBuf[ptr*bytePerTimeStep+outCh*2+1]=0;
 			}
 		}
 	}
