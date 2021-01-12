@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <vector>
+#include <iostream>
 #include "yssimplesound.h"
 
 
@@ -90,11 +91,30 @@ public:
 
 	void DiscardEnded(void);
 
-	void PopulateWriteBuffer(unsigned int &writeBufFilledInNStep,unsigned int wavPtr,const SoundData *wavFile,YSBOOL loop,int nThSound);
+	/* writePtr, wavPtr is in number of samples, not number of bytes.
+	   Returns true if loop==YSFALSE and the buffer moved all the way to the end.
+	   writePtr is updated.
+
+	   writePtr is pointer to the write buffer, not the input SoundData.
+
+	   However, actual number of steps written to the hardware (or the driver's buffer) depends on the
+	   subsequent ALSA function.  Therefore, actually updating the pointer should take place after doing so.
+	*/
+	bool PopulateWriteBuffer(unsigned int &writeBufFilledInNStep,unsigned int &writePtr,unsigned int wavPtr,const SoundData *wavFile,YSBOOL loop,int nThSound);
+
 	void PrintState(int errCode);
 
 	double GetCurrentPosition(const SoundData &dat) const;
 };
+
+
+class YsSoundPlayer::Stream::APISpecificData
+{
+public:
+	const SoundData *playing=nullptr,*standBy=nullptr;
+};
+
+
 
 void YsSoundPlayer::APISpecificData::PlayingSound::Make(SoundData &dat,YSBOOL loop)
 {
@@ -263,7 +283,27 @@ void YsSoundPlayer::APISpecificData::KeepPlaying(void)
 			{
 				if(nullptr!=p.dat)
 				{
-					PopulateWriteBuffer(writeBufFilledInNStep,p.ptr,p.dat,p.loop,nThSound);
+					unsigned int writePtr=0;
+					PopulateWriteBuffer(writeBufFilledInNStep,writePtr,p.ptr,p.dat,p.loop,nThSound);
+					++nThSound;
+				}
+			}
+			for(auto &p : playingStream)
+			{
+				// p.ptr is pointer in number of samples (not in number of bytes).
+				if(nullptr!=p.dat)
+				{
+					unsigned int writePtr=0;
+					YSBOOL loop=YSFALSE;
+					if(nullptr!=p.dat->api->playing &&
+					   true==PopulateWriteBuffer(writeBufFilledInNStep,writePtr,p.ptr,p.dat->api->playing,loop,nThSound))
+					{
+						// PopulateWriteBuffer returning true means the buffer is gone to the end.
+						if(nullptr!=p.dat->api->standBy)
+						{
+							PopulateWriteBuffer(writeBufFilledInNStep,writePtr,0,p.dat->api->standBy,loop,nThSound);
+						}
+					}
 					++nThSound;
 				}
 			}
@@ -310,6 +350,36 @@ void YsSoundPlayer::APISpecificData::KeepPlaying(void)
 							}
 						}
 					}
+					for(auto &p : playingStream)
+					{
+						if(nullptr!=p.dat)
+						{
+							if(nullptr==p.dat->api->playing && nullptr!=p.dat->api->standBy) // Not supposed to happen, but just in case
+							{
+								p.dat->api->playing=p.dat->api->standBy;
+								p.ptr=0;
+							}
+							else if(nullptr!=p.dat->api->playing)
+							{
+								p.ptr+=nWritten;
+								if(p.dat->api->playing->NTimeStep()<=p.ptr)
+								{
+									p.ptr-=p.dat->api->playing->NTimeStep();
+									p.dat->api->playing=p.dat->api->standBy;
+									p.dat->api->standBy=nullptr;
+									if(nullptr!=p.dat->api->standBy && p.ptr<=p.dat->api->standBy->NTimeStep())
+									{
+										p.dat->api->playing=nullptr;
+										p.ptr=0;
+									}
+								}
+							}
+							if(nullptr==p.dat->api->playing)
+							{
+								p.ptr=0;
+							}
+						}
+					}
 				}
 			}
 		}
@@ -347,10 +417,11 @@ void YsSoundPlayer::APISpecificData::DiscardEnded(void)
 	// }
 }
 
-void YsSoundPlayer::APISpecificData::PopulateWriteBuffer(unsigned int &writeBufFilledInNStep,unsigned int wavPtr,const SoundData *wavFile,YSBOOL loop,int nThSound)
+bool YsSoundPlayer::APISpecificData::PopulateWriteBuffer(unsigned int &writeBufFilledInNStep,unsigned int &writePtr,unsigned int wavPtr,const SoundData *wavFile,YSBOOL loop,int nThSound)
 {
+	bool notLoopAndAllTheWayToEnd=false;
 	auto currentFilledInNStep=writeBufFilledInNStep;
-	writeBufFilledInNStep=0;
+	writeBufFilledInNStep=writePtr;
 	while(writeBufFilledInNStep<bufSizeInNStep)
 	{
 		const unsigned char *dataPtr=wavFile->DataPointerAtTimeStep(wavPtr);
@@ -407,16 +478,20 @@ void YsSoundPlayer::APISpecificData::PopulateWriteBuffer(unsigned int &writeBufF
 		{
 			if(YSTRUE!=loop)
 			{
+				notLoopAndAllTheWayToEnd=true;
 				break;
 			}
 			wavPtr=0;
 		}
 	}
 
-	if(writeBufFilledInNStep<currentFilledInNStep)
+	writePtr=writeBufFilledInNStep;
+	if(writeBufFilledInNStep<currentFilledInNStep) // <- Isn't it opposite? ... Why did I write this way?  Or, is it correct?
 	{
 		writeBufFilledInNStep=currentFilledInNStep;
 	}
+
+	return notLoopAndAllTheWayToEnd;
 }
 
 void YsSoundPlayer::APISpecificData::PrintState(int errCode)
@@ -650,12 +725,6 @@ void YsSoundPlayer::SoundData::CleanUpAPISpecific(void)
 }
 
 ////////////////////////////////////////////////////////////
-
-class YsSoundPlayer::Stream::APISpecificData
-{
-public:
-	const SoundData *playing=nullptr,*standBy=nullptr;
-};
 
 YsSoundPlayer::Stream::APISpecificData *YsSoundPlayer::Stream::CreateAPISpecificData(void)
 {
