@@ -444,6 +444,9 @@ int main(void)
 	for(;;)
 	{
 		FsPollDevice();
+
+		player.KeepPlaying();  // <- This line is only needed for Linux ALSA.
+
 		auto key=FsInkey();
 		if(FSKEY_ESC==key)
 		{

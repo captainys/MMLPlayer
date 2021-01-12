@@ -52,7 +52,17 @@ public:
 		void Make(SoundData &dat,YSBOOL loop);
 	};
 
+	class PlayingStream
+	{
+	public:
+		Stream *dat=nullptr;
+		unsigned int ptr=0;
+
+		void Make(Stream &dat);
+	};
+
 	std::vector <PlayingSound> playing;
+	std::vector <PlayingStream> playingStream;
 
 	snd_pcm_t *handle;
 	snd_async_handler_t *asyncHandler;
@@ -94,6 +104,11 @@ void YsSoundPlayer::APISpecificData::PlayingSound::Make(SoundData &dat,YSBOOL lo
 	this->stop=YSFALSE;
 }
 
+void YsSoundPlayer::APISpecificData::PlayingStream::Make(Stream &dat)
+{
+	this->dat=&dat;
+	this->ptr=0;
+}
 
 class YsSoundPlayer::SoundData::APISpecificDataPerSoundData
 {
@@ -632,4 +647,73 @@ YSRESULT YsSoundPlayer::SoundData::PreparePlay(YsSoundPlayer &player)
 void YsSoundPlayer::SoundData::CleanUpAPISpecific(void)
 {
 	api->CleanUp();
+}
+
+////////////////////////////////////////////////////////////
+
+class YsSoundPlayer::Stream::APISpecificData
+{
+public:
+	const SoundData *playing=nullptr,*standBy=nullptr;
+};
+
+YsSoundPlayer::Stream::APISpecificData *YsSoundPlayer::Stream::CreateAPISpecificData(void)
+{
+	APISpecificData *api=new APISpecificData;
+	api->playing=nullptr;
+	api->standBy=nullptr;
+	return api;
+}
+void YsSoundPlayer::Stream::DeleteAPISpecificData(APISpecificData *api)
+{
+	delete api;
+}
+
+YSRESULT YsSoundPlayer::StartStreamingAPISpecific(Stream &stream)
+{
+	for(auto playingStream : this->api->playingStream)
+	{
+		if(playingStream.dat==&stream)
+		{
+			return YSOK; // Already playing
+		}
+	}
+
+	APISpecificData::PlayingStream newStream;
+	newStream.Make(stream);
+	this->api->playingStream.push_back(newStream);
+	return YSOK;
+}
+void YsSoundPlayer::StopStreamingAPISpecific(Stream &stream)
+{
+	for(int i=0; i<this->api->playingStream.size(); ++i)
+	{
+		if(this->api->playingStream[i].dat==&stream)
+		{
+			this->api->playingStream[i]=this->api->playingStream.back();
+			this->api->playingStream.pop_back();
+		}
+	}
+}
+YSBOOL YsSoundPlayer::StreamPlayerReadyToAcceptNextSegmentAPISpecific(const Stream &stream,const SoundData &) const
+{
+	if(nullptr==stream.api->standBy)
+	{
+		return YSTRUE;
+	}
+	return YSFALSE;
+}
+YSRESULT YsSoundPlayer::AddNextStreamingSegmentAPISpecific(Stream &stream,const SoundData &dat)
+{
+	if(nullptr==stream.api->playing)
+	{
+		stream.api->playing=&dat;
+		return YSOK;
+	}
+	if(nullptr==stream.api->standBy)
+	{
+		stream.api->standBy=&dat;
+		return YSOK;
+	}
+	return YSERR;
 }
