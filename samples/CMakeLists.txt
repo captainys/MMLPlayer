@@ -1,5 +1,6 @@
 add_subdirectory(fssimplewindow/src)
 add_subdirectory(yssimplesound/src)
+add_subdirectory(yssimplesound/sample_fssimplewindow)
 add_subdirectory(genwave)
 add_subdirectory(farandol)
 add_subdirectory(moonlight)

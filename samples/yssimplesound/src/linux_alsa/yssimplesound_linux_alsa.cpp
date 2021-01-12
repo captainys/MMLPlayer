@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <stdio.h>
 #include <vector>
 #include <iostream>
@@ -100,7 +101,7 @@ public:
 	   However, actual number of steps written to the hardware (or the driver's buffer) depends on the
 	   subsequent ALSA function.  Therefore, actually updating the pointer should take place after doing so.
 	*/
-	bool PopulateWriteBuffer(unsigned int &writeBufFilledInNStep,unsigned int &writePtr,unsigned int wavPtr,const SoundData *wavFile,YSBOOL loop,int nThSound);
+	bool PopulateWriteBuffer(unsigned int &writePtr,unsigned int wavPtr,const SoundData *wavFile,YSBOOL loop,int nThSound);
 
 	void PrintState(int errCode);
 
@@ -191,7 +192,10 @@ YSRESULT YsSoundPlayer::APISpecificData::Start(void)
 	snd_pcm_hw_params_set_format(handle,hwParam,SND_PCM_FORMAT_S16_LE);
 	snd_pcm_hw_params_set_channels(handle,hwParam,1);
 
-	unsigned int request=8000;//22050;
+	// ? Why did I make it 8000 before ?
+	// Apparently 8000Hz has some problems in play back.
+	// 
+	unsigned int request=44100;
 	int dir;  // What's dir?
 	snd_pcm_hw_params_set_rate_near(handle,hwParam,&request,&dir);
 
@@ -278,16 +282,17 @@ void YsSoundPlayer::APISpecificData::KeepPlaying(void)
 		{
 			unsigned int writeBufFilledInNStep=0;
 			int nThSound=0;
-
 			for(auto &p : playing)
 			{
 				if(nullptr!=p.dat)
 				{
 					unsigned int writePtr=0;
-					PopulateWriteBuffer(writeBufFilledInNStep,writePtr,p.ptr,p.dat,p.loop,nThSound);
+					PopulateWriteBuffer(writePtr,p.ptr,p.dat,p.loop,nThSound);
+					writeBufFilledInNStep=std::max(writePtr,writeBufFilledInNStep);
 					++nThSound;
 				}
 			}
+std::cout << "a" << std::endl;
 			for(auto &p : playingStream)
 			{
 				// p.ptr is pointer in number of samples (not in number of bytes).
@@ -295,23 +300,29 @@ void YsSoundPlayer::APISpecificData::KeepPlaying(void)
 				{
 					unsigned int writePtr=0;
 					YSBOOL loop=YSFALSE;
+std::cout << "b" << std::endl;
 					if(nullptr!=p.dat->api->playing &&
-					   true==PopulateWriteBuffer(writeBufFilledInNStep,writePtr,p.ptr,p.dat->api->playing,loop,nThSound))
+					   true==PopulateWriteBuffer(writePtr,p.ptr,p.dat->api->playing,loop,nThSound))
 					{
 						// PopulateWriteBuffer returning true means the buffer is gone to the end.
 						if(nullptr!=p.dat->api->standBy)
 						{
-							PopulateWriteBuffer(writeBufFilledInNStep,writePtr,0,p.dat->api->standBy,loop,nThSound);
+std::cout << "c" << std::endl;
+							PopulateWriteBuffer(writePtr,0,p.dat->api->standBy,loop,nThSound);
+std::cout << "d" << std::endl;
 						}
 					}
+					writeBufFilledInNStep=std::max(writePtr,writeBufFilledInNStep);
 					++nThSound;
 				}
 			}
+std::cout << "e" << std::endl;
 
 			if(0<nThSound)
 			{
+static int ctr=0;
+std::cout << "x" << writeBufFilledInNStep << " " << ctr++ <<  std::endl;
 				int nWritten=snd_pcm_writei(handle,writeBuf,writeBufFilledInNStep);
-
 				if(nWritten==-EAGAIN)
 				{
 				}
@@ -417,49 +428,39 @@ void YsSoundPlayer::APISpecificData::DiscardEnded(void)
 	// }
 }
 
-bool YsSoundPlayer::APISpecificData::PopulateWriteBuffer(unsigned int &writeBufFilledInNStep,unsigned int &writePtr,unsigned int wavPtr,const SoundData *wavFile,YSBOOL loop,int nThSound)
+bool YsSoundPlayer::APISpecificData::PopulateWriteBuffer(unsigned int &writePtr,unsigned int wavPtr,const SoundData *wavFile,YSBOOL loop,int nThSound)
 {
 	bool notLoopAndAllTheWayToEnd=false;
-	auto currentFilledInNStep=writeBufFilledInNStep;
-	writeBufFilledInNStep=writePtr;
-	while(writeBufFilledInNStep<bufSizeInNStep)
-	{
-		const unsigned char *dataPtr=wavFile->DataPointerAtTimeStep(wavPtr);
-		const int ptrInByte=wavPtr*bytePerTimeStep;
-		const int wavByteLeft=wavFile->SizeInByte()-ptrInByte;
-		const int writeBufLeftInByte=(bufSizeInNStep-writeBufFilledInNStep)*bytePerTimeStep;
-		
-		int nByteToWrite;
-		if(wavByteLeft<writeBufLeftInByte)
-		{
-			nByteToWrite=wavByteLeft;
-		}
-		else
-		{
-			nByteToWrite=writeBufLeftInByte;
-		}
 
-		for(int i=0; i<=nByteToWrite-2; i+=2)
+	int64_t numSamplesIn=wavFile->GetNumSamplePerChannel();
+	int64_t numSamplesOut=bufSizeInNStep;
+
+	int numChannelsIn=wavFile->GetNumChannel();
+	int numChannelsOut=this->nChannel;
+
+	int playbackRate=this->rate;
+
+	int balance=0;
+	int inChannel1=numChannelsIn-1;
+	while(writePtr<bufSizeInNStep && wavPtr<numSamplesIn)
+	{
+		short chOut[2];
+		chOut[0]=wavFile->GetSignedValue16(0,wavPtr);
+		chOut[1]=wavFile->GetSignedValue16(inChannel1,wavPtr);
+
+		for(int outCh=0; outCh<numChannelsOut; ++outCh)
 		{
-			if(0==nThSound || currentFilledInNStep<writeBufFilledInNStep+i/bytePerTimeStep)
+			if(0==nThSound)
 			{
-				writeBuf[writeBufFilledInNStep*bytePerTimeStep+i  ]=dataPtr[i];
-				writeBuf[writeBufFilledInNStep*bytePerTimeStep+i+1]=dataPtr[i+1];
+				writeBuf[writePtr*bytePerTimeStep+outCh*2  ]=chOut[outCh]&255;
+				writeBuf[writePtr*bytePerTimeStep+outCh*2+1]=(chOut[outCh]>>8)&255;
 			}
 			else
 			{
-				int v=(int)dataPtr[i]+(((int)dataPtr[i+1])<<8);
-				if(32768<=v)
-				{
-					v-=65536;
-				}
-				int c=  (int)writeBuf[writeBufFilledInNStep*bytePerTimeStep+i]
-				     +(((int)writeBuf[writeBufFilledInNStep*bytePerTimeStep+i+1])<<8);
-				if(32768<=c)
-				{
-					c-=65536;
-				}
-				v+=c;
+				int c=  (int)writeBuf[writePtr*bytePerTimeStep+outCh*2]
+				     +(((int)writeBuf[writePtr*bytePerTimeStep+outCh*2+1])<<8);
+				c=(c&0x7fff)-(c&0x8000);
+				auto v=chOut[outCh]+c;
 				if(32767<v)
 				{
 					v=32767;
@@ -468,29 +469,42 @@ bool YsSoundPlayer::APISpecificData::PopulateWriteBuffer(unsigned int &writeBufF
 				{
 					v=-32768;
 				}
-				writeBuf[writeBufFilledInNStep*bytePerTimeStep+i  ]=v&0xff;
-				writeBuf[writeBufFilledInNStep*bytePerTimeStep+i+1]=((v>>8)&0xff);
+				writeBuf[writePtr*bytePerTimeStep+outCh*2  ]=v&0xff;
+				writeBuf[writePtr*bytePerTimeStep+outCh*2+1]=((v>>8)&0xff);
 			}
-		}
-		writeBufFilledInNStep+=nByteToWrite/bytePerTimeStep;
-		wavPtr+=nByteToWrite/bytePerTimeStep;
-		if(wavFile->NTimeStep()<=wavPtr)
-		{
-			if(YSTRUE!=loop)
+			++writePtr;
+
+			balance-=wavFile->PlayBackRate();
+			while(balance<0)
 			{
-				notLoopAndAllTheWayToEnd=true;
-				break;
+				balance+=playbackRate;
+				++wavPtr;
 			}
-			wavPtr=0;
+
+			if(wavFile->NTimeStep()<=wavPtr)
+			{
+				if(YSTRUE!=loop)
+				{
+					notLoopAndAllTheWayToEnd=true;
+				}
+				else
+				{
+					wavPtr=0;
+				}
+			}
 		}
 	}
-
-	writePtr=writeBufFilledInNStep;
-	if(writeBufFilledInNStep<currentFilledInNStep) // <- Isn't it opposite? ... Why did I write this way?  Or, is it correct?
+	if(0==nThSound)
 	{
-		writeBufFilledInNStep=currentFilledInNStep;
+		for(auto ptr=writePtr; ptr<bufSizeInNStep; ++ptr)
+		{
+			for(int outCh=0; outCh<numChannelsOut; ++outCh)
+			{
+				writeBuf[writePtr*bytePerTimeStep+outCh*2  ]=0;
+				writeBuf[writePtr*bytePerTimeStep+outCh*2+1]=0;
+			}
+		}
 	}
-
 	return notLoopAndAllTheWayToEnd;
 }
 
