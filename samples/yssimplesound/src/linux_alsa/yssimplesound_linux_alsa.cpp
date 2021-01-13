@@ -196,9 +196,23 @@ YSRESULT YsSoundPlayer::APISpecificData::Start(void)
 	// ? Why did I make it 8000 before ?
 	// Apparently 8000Hz has some problems in play back.
 	// 
-	unsigned int request=44100;
+	unsigned int rateRequest=44100;
 	int dir;  // What's dir?
-	snd_pcm_hw_params_set_rate_near(handle,hwParam,&request,&dir);
+	snd_pcm_hw_params_set_rate_near(handle,hwParam,&rateRequest,&dir);
+
+	// Make buffer size small, otherwise it's going to give me too much latency.
+	// Wanted 40ms, but didn't work.
+	// 2020/01/12
+	//   After numerous attempts, period size of 1/25 seconds (40ms) and buffer size double of it (80ms)
+	//   Works well without giving buffer underrun.
+	//   It's Linux after all.  Don't expect quality audio from Linux.
+	snd_pcm_uframes_t periodSizeRequest;
+	periodSizeRequest=rateRequest/25;
+	snd_pcm_hw_params_set_period_size(handle,hwParam,periodSizeRequest,0);
+
+	snd_pcm_uframes_t bufferSizeRequest;
+	bufferSizeRequest=periodSizeRequest*2;
+	snd_pcm_hw_params_set_buffer_size_near(handle,hwParam,&bufferSizeRequest);
 
 	if(0>snd_pcm_hw_params(handle,hwParam))
 	{
