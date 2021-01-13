@@ -71,7 +71,8 @@ public:
 	snd_pcm_hw_params_t *hwParam;
 	snd_pcm_sw_params_t *swParam;
 
-	unsigned int nChannel,rate,bufSize;
+	unsigned int nChannel,rate;
+	unsigned int pcmBufSize;
 	snd_pcm_uframes_t nPeriod;
 
 	const unsigned int bytePerTimeStep;
@@ -161,7 +162,7 @@ YsSoundPlayer::APISpecificData::APISpecificData() :
 	nChannel=0;
 	rate=0;
 	nPeriod=0;
-	bufSize=0;
+	pcmBufSize=0;
 	writeBuf=nullptr;
 
 	CleanUp();
@@ -208,9 +209,9 @@ YSRESULT YsSoundPlayer::APISpecificData::Start(void)
 	snd_pcm_hw_params_get_channels(hwParam,&nChannel);
 	snd_pcm_hw_params_get_rate(hwParam,&rate,&dir);
 	snd_pcm_hw_params_get_period_size(hwParam,&nPeriod,&dir);
-	snd_pcm_hw_params_get_buffer_size(hwParam,(snd_pcm_uframes_t *)&bufSize);
+	snd_pcm_hw_params_get_buffer_size(hwParam,(snd_pcm_uframes_t *)&pcmBufSize);
 	printf("%d channels, %d Hz, %d periods, %d frames buffer.\n",
-		   nChannel,rate,(int)nPeriod,(int)bufSize);
+		   nChannel,rate,(int)nPeriod,(int)pcmBufSize);
 
 	bufSizeInNStep=nPeriod*4;
 	bufSizeInByte=bufSizeInNStep*bytePerTimeStep;
@@ -237,6 +238,12 @@ YSRESULT YsSoundPlayer::APISpecificData::Start(void)
 	snd_pcm_start(handle);
 
 	printf("YsSoundPlayer started.\n");
+
+
+	snd_pcm_drop(handle);
+	snd_pcm_prepare(handle);
+	snd_pcm_wait(handle,1);
+
 
 	return YSOK;
 }
@@ -277,7 +284,21 @@ void YsSoundPlayer::APISpecificData::KeepPlaying(void)
 {
 	if(nullptr!=handle)
 	{
+		snd_pcm_state_t pcmState=snd_pcm_state(handle);
+
+		snd_pcm_status_t *pcmStatus;
+		snd_pcm_status_alloca(&pcmStatus);
+		snd_pcm_status(handle,pcmStatus);
+
+		if(SND_PCM_STATE_RUNNING!=pcmState)
+		{
+			snd_pcm_drop(handle);
+			snd_pcm_prepare(handle);
+			snd_pcm_wait(handle,1);
+		}
+
 		const int nAvail=(unsigned int)snd_pcm_avail_update(handle);
+
 		if(nPeriod<nAvail)
 		{
 			unsigned int writeBufFilledInNStep=0;
@@ -297,7 +318,6 @@ void YsSoundPlayer::APISpecificData::KeepPlaying(void)
 				// p.ptr is pointer in number of samples (not in number of bytes).
 				if(nullptr!=p.dat)
 				{
-std::cout << "a" << (p.dat->api->playing!=nullptr) << " " << (p.dat->api->standBy!=nullptr) << std::endl;
 					unsigned int writePtr=0;
 					YSBOOL loop=YSFALSE;
 					if(nullptr!=p.dat->api->playing)
@@ -308,7 +328,6 @@ std::cout << "a" << (p.dat->api->playing!=nullptr) << " " << (p.dat->api->standB
 							// PopulateWriteBuffer returning true means the buffer is gone to the end.
 							if(nullptr!=p.dat->api->standBy)
 							{
-std::cout << "c" << std::endl;
 								PopulateWriteBuffer(writePtr,0,p.dat->api->standBy,loop,nThSound);
 							}
 						}
@@ -317,13 +336,10 @@ std::cout << "c" << std::endl;
 					}
 				}
 			}
-std::cout << "e" << nThSound << std::endl;
 
 			if(0<nThSound)
 			{
-static int ctr=0;
-				int nWritten=snd_pcm_writei(handle,writeBuf,writeBufFilledInNStep);
-std::cout << "x" << writeBufFilledInNStep << " " << nWritten << " " << ctr++ <<  std::endl;
+				int nWritten=(0<writeBufFilledInNStep ? snd_pcm_writei(handle,writeBuf,writeBufFilledInNStep) : 0);
 				if(nWritten==-EAGAIN)
 				{
 				}
@@ -507,6 +523,7 @@ bool YsSoundPlayer::APISpecificData::PopulateWriteBuffer(unsigned int &writePtr,
 			}
 		}
 	}
+
 	return notLoopAndAllTheWayToEnd;
 }
 
@@ -767,6 +784,7 @@ YSRESULT YsSoundPlayer::StartStreamingAPISpecific(Stream &stream)
 	APISpecificData::PlayingStream newStream;
 	newStream.Make(stream);
 	this->api->playingStream.push_back(newStream);
+
 	return YSOK;
 }
 void YsSoundPlayer::StopStreamingAPISpecific(Stream &stream)
