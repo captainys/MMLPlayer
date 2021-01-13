@@ -272,7 +272,7 @@ void YsSoundPlayer::SoundData::CleanUp(void)
 
 unsigned int YsSoundPlayer::SoundData::NTimeStep(void) const
 {
-	return SizeInByte()/BytePerTimeStep();
+	return SizeInByte()/(BytePerTimeStep()*GetNumChannel());
 }
 
 YSBOOL YsSoundPlayer::SoundData::Stereo(void) const
