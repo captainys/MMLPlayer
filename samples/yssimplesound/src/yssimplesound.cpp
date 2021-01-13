@@ -248,6 +248,56 @@ YsSoundPlayer::SoundData::~SoundData()
 	DeleteAPISpecificData(api);
 }
 
+void YsSoundPlayer::SoundData::CopyFrom(const SoundData &incoming)
+{
+	if(this!=&incoming)
+	{
+		CleanUp();
+
+		prepared=false;
+
+		playerStatePtr=incoming.playerStatePtr;
+
+		lastModifiedChannel=incoming.lastModifiedChannel;
+		stereo=incoming.stereo;
+		bit=incoming.bit;
+		rate=incoming.rate;
+		sizeInBytes=incoming.sizeInBytes;
+
+		isSigned=incoming.isSigned;
+		dat=incoming.dat;
+		playBackVolume=incoming.playBackVolume;
+
+		// Do not copy -> APISpecificDataPerSoundData *api;
+	}
+}
+
+void YsSoundPlayer::SoundData::MoveFrom(SoundData &incoming)
+{
+	if(this!=&incoming)
+	{
+		CleanUp();
+
+		prepared=false;
+
+		playerStatePtr=incoming.playerStatePtr;
+
+		lastModifiedChannel=incoming.lastModifiedChannel;
+		stereo=incoming.stereo;
+		bit=incoming.bit;
+		rate=incoming.rate;
+		sizeInBytes=incoming.sizeInBytes;
+
+		isSigned=incoming.isSigned;
+		std::swap(dat,incoming.dat);
+		playBackVolume=incoming.playBackVolume;
+
+		incoming.CleanUp();
+
+		// Do not copy -> APISpecificDataPerSoundData *api;
+	}
+}
+
 void YsSoundPlayer::SoundData::Initialize(void)
 {
 	CleanUp();

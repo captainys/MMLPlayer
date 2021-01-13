@@ -438,7 +438,7 @@ int main(void)
 	player.StartStreaming(stream);
 
 	YsSoundPlayer::SoundData nextWave;
-	auto rawWave=mmlplayer.GenerateWave(100);  // Create for next 100ms
+	auto rawWave=mmlplayer.GenerateWave(1000);  // Create for next 100ms
 	nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
 
 	for(;;)
@@ -456,7 +456,7 @@ int main(void)
 		if(YSTRUE==player.StreamPlayerReadyToAcceptNextSegment(stream,nextWave))
 		{
 			player.AddNextStreamingSegment(stream,nextWave);
-			auto rawWave=mmlplayer.GenerateWave(10000);  // Create for next 100ms
+			auto rawWave=mmlplayer.GenerateWave(1000);  // Create for next 100ms
 			nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
 		}
 	}

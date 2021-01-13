@@ -291,6 +291,10 @@ private:
 public:
 	SoundData();
 	~SoundData();
+
+	void CopyFrom(const SoundData &incoming);
+	void MoveFrom(SoundData &incoming);
+
 	void Initialize(void);
 
 	void CleanUp(void);

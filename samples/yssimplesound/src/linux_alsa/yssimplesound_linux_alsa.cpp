@@ -113,7 +113,7 @@ public:
 class YsSoundPlayer::Stream::APISpecificData
 {
 public:
-	const SoundData *playing=nullptr,*standBy=nullptr;
+	SoundData playing,standBy;
 };
 
 
@@ -320,15 +320,15 @@ void YsSoundPlayer::APISpecificData::KeepPlaying(void)
 				{
 					unsigned int writePtr=0;
 					YSBOOL loop=YSFALSE;
-					if(nullptr!=p.dat->api->playing)
+					if(0!=p.dat->api->playing.NTimeStep())
 					{
-						bool firstBufferDone=PopulateWriteBuffer(writePtr,p.ptr,p.dat->api->playing,loop,nThSound);
+						bool firstBufferDone=PopulateWriteBuffer(writePtr,p.ptr,&p.dat->api->playing,loop,nThSound);
 						if(true==firstBufferDone)
 						{
 							// PopulateWriteBuffer returning true means the buffer is gone to the end.
-							if(nullptr!=p.dat->api->standBy)
+							if(0!=p.dat->api->standBy.NTimeStep())
 							{
-								PopulateWriteBuffer(writePtr,0,p.dat->api->standBy,loop,nThSound);
+								PopulateWriteBuffer(writePtr,0,&p.dat->api->standBy,loop,nThSound);
 							}
 						}
 						++nThSound;
@@ -383,27 +383,19 @@ void YsSoundPlayer::APISpecificData::KeepPlaying(void)
 					{
 						if(nullptr!=p.dat)
 						{
-							if(nullptr==p.dat->api->playing && nullptr!=p.dat->api->standBy) // Not supposed to happen, but just in case
+							p.ptr+=nWritten*p.dat->api->playing.PlayBackRate()/outPlaybackRate;
+							if(p.dat->api->playing.NTimeStep()<=p.ptr)
 							{
-								p.dat->api->playing=p.dat->api->standBy;
-								p.ptr=0;
-							}
-							else if(nullptr!=p.dat->api->playing)
-							{
-								p.ptr+=nWritten*p.dat->api->playing->PlayBackRate()/outPlaybackRate;
-								if(p.dat->api->playing->NTimeStep()<=p.ptr)
+								p.ptr-=p.dat->api->playing.NTimeStep();
+								p.dat->api->playing.MoveFrom(p.dat->api->standBy);
+								p.dat->api->standBy.CleanUp();
+								if(p.dat->api->playing.NTimeStep()<=p.ptr)
 								{
-									p.ptr-=p.dat->api->playing->NTimeStep();
-									p.dat->api->playing=p.dat->api->standBy;
-									p.dat->api->standBy=nullptr;
-									if(nullptr!=p.dat->api->playing && p.dat->api->playing->NTimeStep()<=p.ptr)
-									{
-										p.dat->api->playing=nullptr;
-										p.ptr=0;
-									}
+									p.dat->api->playing.CleanUp();
+									p.ptr=0;
 								}
 							}
-							if(nullptr==p.dat->api->playing)
+							if(0==p.dat->api->playing.NTimeStep())
 							{
 								p.ptr=0;
 							}
@@ -641,12 +633,6 @@ YSRESULT YsSoundPlayer::PlayOneShotAPISpecific(SoundData &dat)
 	p.Make(dat,YSFALSE);
 	api->playing.push_back(p);
 
-	if(nullptr!=api->handle)
-	{
-		snd_pcm_drop(api->handle);
-		snd_pcm_prepare(api->handle);
-		snd_pcm_wait(api->handle,1);
-	}
 	return YSOK;
 }
 YSRESULT YsSoundPlayer::PlayBackgroundAPISpecific(SoundData &dat)
@@ -663,12 +649,6 @@ YSRESULT YsSoundPlayer::PlayBackgroundAPISpecific(SoundData &dat)
 	p.Make(dat,YSTRUE);
 	api->playing.push_back(p);
 
-	if(nullptr!=api->handle)
-	{
-		snd_pcm_drop(api->handle);
-		snd_pcm_prepare(api->handle);
-		snd_pcm_wait(api->handle,1);
-	}
 	return YSOK;
 }
 
@@ -762,8 +742,6 @@ void YsSoundPlayer::SoundData::CleanUpAPISpecific(void)
 YsSoundPlayer::Stream::APISpecificData *YsSoundPlayer::Stream::CreateAPISpecificData(void)
 {
 	APISpecificData *api=new APISpecificData;
-	api->playing=nullptr;
-	api->standBy=nullptr;
 	return api;
 }
 void YsSoundPlayer::Stream::DeleteAPISpecificData(APISpecificData *api)
@@ -800,7 +778,7 @@ void YsSoundPlayer::StopStreamingAPISpecific(Stream &stream)
 }
 YSBOOL YsSoundPlayer::StreamPlayerReadyToAcceptNextSegmentAPISpecific(const Stream &stream,const SoundData &) const
 {
-	if(nullptr==stream.api->standBy)
+	if(0==stream.api->standBy.NTimeStep())
 	{
 		return YSTRUE;
 	}
@@ -808,14 +786,14 @@ YSBOOL YsSoundPlayer::StreamPlayerReadyToAcceptNextSegmentAPISpecific(const Stre
 }
 YSRESULT YsSoundPlayer::AddNextStreamingSegmentAPISpecific(Stream &stream,const SoundData &dat)
 {
-	if(nullptr==stream.api->playing)
+	if(0==stream.api->playing.NTimeStep())
 	{
-		stream.api->playing=&dat;
+		stream.api->playing.CopyFrom(dat);
 		return YSOK;
 	}
-	if(nullptr==stream.api->standBy)
+	if(0==stream.api->standBy.NTimeStep())
 	{
-		stream.api->standBy=&dat;
+		stream.api->standBy.CopyFrom(dat);
 		return YSOK;
 	}
 	return YSERR;
