@@ -82,6 +82,8 @@ void MMLPlayer::MMLError::Clear(void)
 {
 	chNum=0;
 	errorCode=0;
+	pos=0;
+	MML="";
 }
 
 
@@ -282,6 +284,7 @@ bool MMLPlayer::InterpretMML(int chNum)
 	auto &ch=channels[chNum];
 	while(ch.ptr.pos<ch.mml.size() && INFINITE==ch.ptr.toneEndAtInMicrosec)
 	{
+		auto errorPos=ch.ptr.pos; // This will be recorded as error position if any.
 		char cmd=ch.mml[ch.ptr.pos++];
 		if('a'<=cmd && cmd<='z')
 		{
@@ -388,7 +391,9 @@ bool MMLPlayer::InterpretMML(int chNum)
 				if(vol<0 || VOLUME_MAX<vol)
 				{
 					lastError.errorCode=ERROR_VOLUME;
+					lastError.pos=errorPos;
 					lastError.chNum=chNum;
+					lastError.MML=ch.mml;
 					return false;
 				}
 				ch.volume=vol;
@@ -401,7 +406,9 @@ bool MMLPlayer::InterpretMML(int chNum)
 				if(oct<0 || OCTAVE_MAX<oct)
 				{
 					lastError.errorCode=ERROR_OCTAVE;
+					lastError.pos=errorPos;
 					lastError.chNum=chNum;
+					lastError.MML=ch.mml;
 					return false;
 				}
 				ch.octave=oct;
@@ -425,7 +432,9 @@ bool MMLPlayer::InterpretMML(int chNum)
 				if(len<=0 || NOTE_LENGTH_MAX<len)
 				{
 					lastError.errorCode=ERROR_NOTE_LENGTH;
+					lastError.pos=errorPos;
 					lastError.chNum=chNum;
+					lastError.MML=ch.mml;
 					return false;
 				}
 				ch.noteLength=len;
@@ -443,7 +452,9 @@ bool MMLPlayer::InterpretMML(int chNum)
 				if(tempo<=0 || TEMPO_MAX<tempo)
 				{
 					lastError.errorCode=ERROR_TEMPO;
+					lastError.pos=errorPos;
 					lastError.chNum=chNum;
+					lastError.MML=ch.mml;
 					return false;
 				}
 				ch.tempo=tempo;
@@ -455,7 +466,9 @@ bool MMLPlayer::InterpretMML(int chNum)
 				if(fraction<0 || KEYON_TIME_FRACTION_MAX<fraction)
 				{
 					lastError.errorCode=ERROR_FRACTION;
+					lastError.pos=errorPos;
 					lastError.chNum=chNum;
+					lastError.MML=ch.mml;
 					return false;
 				}
 				ch.keyOnTimeFraction=fraction;
@@ -467,7 +480,9 @@ bool MMLPlayer::InterpretMML(int chNum)
 				if(instNum<0 || INST_NUM_MAX<instNum)
 				{
 					lastError.errorCode=ERROR_INSTRUMENT_NUMBER;
+					lastError.pos=errorPos;
 					lastError.chNum=chNum;
+					lastError.MML=ch.mml;
 					return false;
 				}
 				ch.instNum=instNum;
@@ -476,7 +491,9 @@ bool MMLPlayer::InterpretMML(int chNum)
 			break;
 		default:
 			lastError.errorCode=ERROR_UNDEFINED_COMMAND;
+			lastError.pos=errorPos;
 			lastError.chNum=chNum;
+			lastError.MML=ch.mml;
 			return false;
 		}
 	}
@@ -642,6 +659,37 @@ uint64_t MMLPlayer::GetTimeInMicrosec(void) const
 
 
 
+/* static */ std::string MMLPlayer::ErrorCodeToStr(int errCode)
+{
+	switch(errCode)
+	{
+	case ERROR_NOERROR:
+		return "ERROR_NOERROR";
+	case ERROR_UNDEFINED_COMMAND:
+		return "ERROR_UNDEFINED_COMMAND";
+	case ERROR_INSTRUMENT_NUMBER:
+		return "ERROR_INSTRUMENT_NUMBER";
+	case ERROR_VOLUME:
+		return "ERROR_VOLUME";
+	case ERROR_OCTAVE:
+		return "ERROR_OCTAVE";
+	case ERROR_NOTE_LENGTH:
+		return "ERROR_NOTE_LENGTH";
+	case ERROR_TEMPO:
+		return "ERROR_TEMPO";
+	case ERROR_FRACTION:
+		return "ERROR_FRACTION";
+	default:
+		break;
+	}
+	return "? Error";
+}
+
+int MMLPlayer::GetLastErrorCode(void) const
+{
+	return lastError.errorCode;
+}
+
 ////////////////////////////////////////////////////////////
 
 
@@ -666,6 +714,8 @@ void MMLSegmentPlayer::AddSegment(
 
 std::vector <unsigned char> MMLSegmentPlayer::GenerateWave(uint64_t timeInMillisec)
 {
+	lastError.Clear();
+
 	std::vector <unsigned char> rawWaveData;
 
 	uint64_t timeInMicrosec=timeInMillisec*(MICRO/MILLI);
@@ -701,6 +751,10 @@ std::vector <unsigned char> MMLSegmentPlayer::GenerateWave(uint64_t timeInMillis
 		}
 
 		auto rawWavePiece=MMLPlayer::GenerateWave(timeInMillisec);
+		if(0!=lastError.errorCode)
+		{
+			return rawWaveData;
+		}
 
 		uint64_t rawWavePieceLengthInMicrosec=rawWavePiece.size()*MICRO/(YM2612::WAVE_SAMPLING_RATE*OUTPUT_CHANNELS*OUTPUT_BYTES_PER_SAMPLE);
 		if(rawWavePieceLengthInMicrosec<timeInMicrosec)
@@ -723,6 +777,14 @@ std::vector <unsigned char> MMLSegmentPlayer::GenerateWave(uint64_t timeInMillis
 	}
 
 	return rawWaveData;
+}
+
+void MMLSegmentPlayer::Clear(void)
+{
+	repeat=false;
+	playingSegment=0;
+	mmlSegments.clear();
+	MMLPlayer::Clear();
 }
 
 bool MMLSegmentPlayer::PlayDone(void) const

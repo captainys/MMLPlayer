@@ -80,6 +80,7 @@ public:
 
 	enum
 	{
+		ERROR_NOERROR,
 		ERROR_UNDEFINED_COMMAND,
 		ERROR_INSTRUMENT_NUMBER,
 		ERROR_VOLUME,
@@ -88,6 +89,8 @@ public:
 		ERROR_TEMPO,
 		ERROR_FRACTION,
 	};
+
+	static std::string ErrorCodeToStr(int errCode);
 
 	class FMInst
 	{
@@ -108,7 +111,9 @@ public:
 	{
 	public:
 		int chNum;
+		int pos;
 		int errorCode;
+		std::string MML;
 		void Clear(void);
 	};
 
@@ -116,7 +121,6 @@ private:
 	YM2612 ym2612;
 	std::string fmbName;
 	FMInst inst[128];
-	MMLError lastError;
 	bool mute[NUM_CHANNELS];
 
 	class PlayPointer
@@ -145,6 +149,10 @@ private:
 	};
 	uint64_t timeInMicrosec=0;
 	Channel channels[NUM_CHANNELS];
+
+protected:
+	MMLError lastError;
+
 
 public:
 	/*!
@@ -183,11 +191,6 @@ protected:
 public:
 	/*!
 	*/
-	MMLError GetLastError(void) const;
-
-
-	/*!
-	*/
 	uint64_t GetTimeInMicrosec(void) const;
 
 
@@ -195,6 +198,18 @@ public:
 	/*!
 	*/
 	void MuteChannels(bool ch0Mute,bool ch1Mute,bool ch2Mute,bool ch3Mute,bool ch4Mute,bool ch5Mute);
+
+
+
+	/*!
+	*/
+	int GetLastErrorCode(void) const;
+
+
+
+	/*!
+	*/
+	MMLError GetLastError(void) const;
 };
 
 
@@ -216,6 +231,8 @@ private:
 
 
 public:
+	/*!
+	*/
 	void AddSegment(
 		std::string ch0,
 		std::string ch1="",
@@ -226,13 +243,26 @@ public:
 
 
 
+	/*!
+	*/
 	std::vector <unsigned char> GenerateWave(uint64_t timeInMillisec);
 
 
 
+	/*!
+	*/
+	void Clear(void);
+
+
+
+	/*!
+	*/
 	bool PlayDone(void) const;
 
 
+
+	/*!
+	*/
 	int GetCurrentSegment(void) const;
 };
 

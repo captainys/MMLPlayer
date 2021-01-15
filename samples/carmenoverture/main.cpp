@@ -27,6 +27,18 @@ int main(void)
 	auto rawWave=mmlplayer.GenerateWave(1000);  // Create for next 100ms
 	nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
 
+	if(0!=mmlplayer.GetLastErrorCode())
+	{
+		auto err=mmlplayer.GetLastError();
+		std::cout << mmlplayer.ErrorCodeToStr(err.errorCode) << std::endl;
+		std::cout << err.MML << std::endl;
+		for(int i=0; i<err.pos; ++i)
+		{
+			std::cout << " ";
+		}
+		std::cout << "^" << std::endl;
+	}
+
 	for(;;)
 	{
 		FsPollDevice();
@@ -44,6 +56,18 @@ int main(void)
 			player.AddNextStreamingSegment(stream,nextWave);
 			auto rawWave=mmlplayer.GenerateWave(1000);  /// Create for next 100ms
 			nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
+
+			if(0!=mmlplayer.GetLastErrorCode())
+			{
+				auto err=mmlplayer.GetLastError();
+				std::cout << mmlplayer.ErrorCodeToStr(err.errorCode) << std::endl;
+				std::cout << err.MML << std::endl;
+				for(int i=0; i<err.pos; ++i)
+				{
+					std::cout << " ";
+				}
+				std::cout << "^" << std::endl;
+			}
 		}
 	}
 
