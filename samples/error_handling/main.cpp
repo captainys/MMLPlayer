@@ -11,15 +11,10 @@ void TryAndPrintError(MMLSegmentPlayer mml)
 		auto w=mml.GenerateWave(100);
 		if(0!=mml.GetLastErrorCode())
 		{
-			auto err=mml.GetLastError();
-			std::cout << mml.ErrorCodeToStr(err.errorCode) << std::endl;
-			std::cout << err.MML << std::endl;
-			for(int i=0; i<err.pos; ++i)
+			for(auto msg : mml.GetLastError().Format())
 			{
-				std::cout << " ";
+				std::cout << msg << std::endl;
 			}
-			std::cout << "^" << std::endl;
-			break;
 		}
 	}
 }

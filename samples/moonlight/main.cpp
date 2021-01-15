@@ -1,3 +1,4 @@
+#include <iostream>
 #include "mmlplayer.h"
 #include "fssimplewindow.h"
 #include "yssimplesound.h"
@@ -441,6 +442,14 @@ int main(void)
 	auto rawWave=mmlplayer.GenerateWave(1000);  // Create for next 100ms
 	nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
 
+	if(0!=mmlplayer.GetLastErrorCode())
+	{
+		for(auto msg : mmlplayer.GetLastError().Format())
+		{
+			std::cout << msg << std::endl;
+		}
+	}
+
 	for(;;)
 	{
 		FsPollDevice();
@@ -458,6 +467,14 @@ int main(void)
 			player.AddNextStreamingSegment(stream,nextWave);
 			auto rawWave=mmlplayer.GenerateWave(1000);  // Create for next 100ms
 			nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
+
+			if(0!=mmlplayer.GetLastErrorCode())
+			{
+				for(auto msg : mmlplayer.GetLastError().Format())
+				{
+					std::cout << msg << std::endl;
+				}
+			}
 		}
 	}
 

@@ -115,6 +115,7 @@ public:
 		int errorCode;
 		std::string MML;
 		void Clear(void);
+		std::vector <std::string> Format(void) const;
 	};
 
 private:
@@ -243,9 +244,15 @@ public:
 
 
 
-	/*!
+	/*! Generates wave for the next segment.
+	    If repeat==false and the music reaches the end, it will return
+	    an array with all zeros.
+	    This is to deal with the situation that the stream player is using a
+	    real RING buffer, in which case silent segment needs to be constantly
+	    pumped to the buffer, or the remnant from the earlier segments will
+	    be played after the end of the music.  (It happens with DirectSound)
 	*/
-	std::vector <unsigned char> GenerateWave(uint64_t timeInMillisec);
+	std::vector <unsigned char> GenerateWave(const uint64_t timeInMillisec);
 
 
 

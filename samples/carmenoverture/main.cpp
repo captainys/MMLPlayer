@@ -29,14 +29,10 @@ int main(void)
 
 	if(0!=mmlplayer.GetLastErrorCode())
 	{
-		auto err=mmlplayer.GetLastError();
-		std::cout << mmlplayer.ErrorCodeToStr(err.errorCode) << std::endl;
-		std::cout << err.MML << std::endl;
-		for(int i=0; i<err.pos; ++i)
+		for(auto msg : mmlplayer.GetLastError().Format())
 		{
-			std::cout << " ";
+			std::cout << msg << std::endl;
 		}
-		std::cout << "^" << std::endl;
 	}
 
 	for(;;)
@@ -59,14 +55,10 @@ int main(void)
 
 			if(0!=mmlplayer.GetLastErrorCode())
 			{
-				auto err=mmlplayer.GetLastError();
-				std::cout << mmlplayer.ErrorCodeToStr(err.errorCode) << std::endl;
-				std::cout << err.MML << std::endl;
-				for(int i=0; i<err.pos; ++i)
+				for(auto msg : mmlplayer.GetLastError().Format())
 				{
-					std::cout << " ";
+					std::cout << msg << std::endl;
 				}
-				std::cout << "^" << std::endl;
 			}
 		}
 	}
@@ -81,19 +73,20 @@ const std::string MML[][12]=
 	// ----- Main Theme
 	// ----- 1
 	{
-		"q8v15t130@34",     //// チェレスタ ////
-		"q8v15t130@22",     //// ハープシコード////
-		"q8v15t130@17",     //// Electric Piano ////
-		"q8v15t130@70",     //// Orchestra Brass - 5th row////
-		"q8v15t130@2 ",     //// Horn - 9th row////
-		"q8v15t130@74",     //// Cello - Alternate or unison or 9th or 5th row ////
-		"v15t130o4@1 ",     //// Cymbal 1
-		"v15t130o4@1 ",     //// Cymbal 1
-		"v15t130o4@2 ",     //// Drum 1
-		"v15t130o4@2 ",     //// Drum 1
-		"v15t130o4@3 ",     //// Snare Drum
-		"v15t130o4@3 ",     //// Snare Drum
+		"q8v15t130@1",      // Electric Piano
+		"q8v15t130@5",      // Harpsichord
+		"q8v15t130@7",      // Oboe
+		"q8v15t130@19",     // Electric
+		"q8v15t130@2 ",     // Piano
+		"q8v15t130@13",     // E.Base
+		"v15t130o4@1 ",     //
+		"v15t130o4@1 ",     //
+		"v15t130o4@2 ",     //
+		"v15t130o4@2 ",     //
+		"v15t130o4@3 ",     //
+		"v15t130o4@3 ",     //
 	},
+/*
 	// 
 	{
 		"q5L16o5a8aaaede",
@@ -575,16 +568,17 @@ const std::string MML[][12]=
 		"r4c4",
 		"r4c4",
 	},
+*/
 	// Repeat
 	// ----- 17
 	// Sub(?) theme
 	{
-		"@10v8L8o6c+f+c+o5b", //// Oboe
-		"@7 v8L8o6c+f+c+o5b", //// Flute
-		"@9 v8L8o4c+f+c+o4b", //// Clarinet
-		"@2 v8L8o3f+c+f+g+",  //// Horn
-		"v8r2@16",   //// Grand Piano
-		"v8r2@42",   //// Timpani
+		"@8 v8L8o6c+f+c+o5b", //// Clarinet
+		"@7 v8L8o6c+f+c+o5b", //// Oboe
+		"@9 v8L8o4c+f+c+o4b", //// Woodwind
+		"@2 v8L8o3f+c+f+g+",  //// Piano
+		"@16v8r2",   //// Bell
+		"@13v8r2",   //// E.Bass
 		"v8",
 		"v8",
 		"v8",
@@ -699,12 +693,12 @@ const std::string MML[][12]=
 	},
 	//
 	{
-		"@7 v13L16o6ddd8eee8",
-		"@16v13L16o6ddd8eee8",
-		"@73v13L16o5ddd8eee8",
-		"@70v13L16o4ddd8ddd8",
-		"@70v13L16o3ddd8eee8",
-		"v13r2",
+		"Q6@1 v13L16o6ddd8eee8",
+		"Q6@16v13L16o6ddd8eee8",
+		"Q6@2 v13L16o5ddd8eee8",
+		"Q6@2 v13L16o4ddd8ddd8",
+		"Q6@13v13L16o3ddd8eee8",
+		"Q6v13r2",
 		"",
 		"",
 		"",
@@ -729,12 +723,12 @@ const std::string MML[][12]=
 	},
 	//
 	{
-		"@10L8o6c+o5g+o6c+d",
-		"@7 L8o6c+o5g+o6c+d",
-		"@9 L8o5c+o4g+o5c+d",
-		"@2 L8o4c+o3g+o4c+d",
-		"L32o6g+a+g+a+g+a+g+a+g+a+g+a+g+a+g+a+",
-		"L16o4c+4.q4c+c+q8",
+		"Q8@8L8o6c+o5g+o6c+d",
+		"Q8@7L8o6c+o5g+o6c+d",
+		"Q8@9L8o5c+o4g+o5c+d",
+		"Q8@2L8o4c+o3g+o4c+d",
+		"Q8L32o6g+a+g+a+g+a+g+a+g+a+g+a+g+a+g+a+",
+		"Q8L16o4c+4.q4c+c+q8",
 		"",
 		"",
 		"",
@@ -759,11 +753,11 @@ const std::string MML[][12]=
 	},
 	//
 	{
-		"@7 L16o6ddd8eee8",
-		"@16L16o6ddd8eee8",
-		"@73L16o5ddd8eee8",
-		"@70L16o4ddd8ddd8",
-		"@70L16o3ddd8eee8",
+		"Q6@1 L16o6ddd8eee8",
+		"Q6@16L16o6ddd8eee8",
+		"Q6@2 L16o5ddd8eee8",
+		"Q6@2 L16o4ddd8ddd8",
+		"Q6@13L16o3ddd8eee8",
 		"r2",
 		"",
 		"",
@@ -789,10 +783,10 @@ const std::string MML[][12]=
 	},
 	// ----- 31
 	{
-		"@10v2L32o6g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+",
-		"@7 v2L32o6g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+",
-		"@9 v2L32o5g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+",
-		"@2 v2L8o3g+o2g+v3ao3a",
+		"@8v2L32o6g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+",
+		"@7v2L32o6g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+",
+		"@9v2L32o5g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+",
+		"@2v2L8o3g+o2g+v3ao3a",
 		"v2L8o3g+o2g+v3ao3a",
 		"v2L16o4r8q4c+c+v3q8c+4",
 		"",
@@ -834,9 +828,9 @@ const std::string MML[][12]=
 	},
 	//
 	{
-		"v13L32o6g+a+g+a+g+a+v15g+a+g+a+g+a+@34L16gg+",
-		"v13L32o6g+a+g+a+g+a+v15g+a+g+a+g+a+@22L16gg+",
-		"v13L32o5g+a+g+a+g+a+v15g+a+g+a+g+a+@17L16gg+",
+		"v13L32o6g+a+g+a+g+a+v15g+a+g+a+g+a+@1L16gg+",
+		"v13L32o6g+a+g+a+g+a+v15g+a+g+a+g+a+@5L16gg+",
+		"v13L32o5g+a+g+a+g+a+v15g+a+g+a+g+a+@7L16gg+",
 		"v13L8o4do3dv15d+e",
 		"v13L8o4do3dv15d+e",
 		"v13L16o4r8q4c+c+v15q8c+4",
@@ -849,12 +843,12 @@ const std::string MML[][12]=
 	},
 	// Main Theme
 	{
-		"@34v15L16q5o6a8o5aaaede",
-		"@22v15L16q5o6a8o5aaaede",
-		"@17v15L16q5o4a8aaaede",
-		"@70v15L8o2arer",
+		"@1v15L16q5o6a8o5aaaede",
+		"@5v15L16q5o6a8o5aaaede",
+		"@7v15L16q5o4a8aaaede",
+		"@19v15L8o2arer",
 		"@2 v15L8o3arer",
-		"@74v15L8o4rara",
+		"@13v15L8o4rara",
 		"@1v15c4r4",
 		"@1v15c4r4",
 		"@2v15r4c4",
@@ -1856,12 +1850,12 @@ const std::string MML[][12]=
 	// ----- Main Theme Pattern 2
 	// ----- 101
 	{
-		"v15t130@34",     //// チェレスタ ////
-		"v15t130@22",     //// ハープシコード////
-		"v15t130@17",     //// Electric Piano ////
-		"v15t130@70",     //// Orchestra Brass - 5th row////
-		"v15t130@2",      //// Horn - 9th row////
-		"v15t130@74",     //// Cello - Alternate or unison or 9th or 5th row ////
+		"v15t130@1",        // Electric Piano
+		"v15t130@5",        // Harpsichord
+		"v15t130@7",        // Oboe
+		"v15t130@19",       // Electric
+		"v15t130@2",        // Piano
+		"v15t130@13",       // E.Base
 		"",
 		"",
 		"",

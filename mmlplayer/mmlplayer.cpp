@@ -86,6 +86,21 @@ void MMLPlayer::MMLError::Clear(void)
 	MML="";
 }
 
+std::vector <std::string> MMLPlayer::MMLError::Format(void) const
+{
+	std::vector <std::string> errorMsg;
+
+	errorMsg.push_back(ErrorCodeToStr(errorCode));
+	errorMsg.push_back(MML);
+	errorMsg.push_back("");
+	for(int i=0; i<pos; ++i)
+	{
+		errorMsg.back().push_back(' ');
+	}
+	errorMsg.back().push_back('^');
+
+	return errorMsg;
+}
 
 
 ////////////////////////////////////////////////////////////
@@ -712,7 +727,7 @@ void MMLSegmentPlayer::AddSegment(
 	mmlSegments.back().mml[5]=ch5;
 }
 
-std::vector <unsigned char> MMLSegmentPlayer::GenerateWave(uint64_t timeInMillisec)
+std::vector <unsigned char> MMLSegmentPlayer::GenerateWave(const uint64_t timeInMillisec)
 {
 	lastError.Clear();
 
@@ -773,6 +788,16 @@ std::vector <unsigned char> MMLSegmentPlayer::GenerateWave(uint64_t timeInMillis
 		else
 		{
 			rawWaveData.insert(rawWaveData.end(),rawWavePiece.begin(),rawWavePiece.end());
+		}
+	}
+
+	if(true==PlayDone())
+	{
+		uint64_t requiredLength=
+		    timeInMillisec*(YM2612::WAVE_SAMPLING_RATE*OUTPUT_CHANNELS*OUTPUT_BYTES_PER_SAMPLE)/MILLI;
+		while(rawWaveData.size()<requiredLength)
+		{
+			rawWaveData.push_back(0);
 		}
 	}
 
