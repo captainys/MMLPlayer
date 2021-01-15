@@ -71,6 +71,8 @@ public:
 
 		MMLPLAYER_VOLUME_DEFAULT=4096,
 
+		OUTPUT_CHANNELS=2,
+		OUTPUT_BYTES_PER_SAMPLE=2,
 		MILLI=1000,
 		MICRO=1000000,
 		INFINITE=~0,
@@ -228,6 +230,9 @@ public:
 
 
 	bool PlayDone(void) const;
+
+
+	int GetCurrentSegment(void) const;
 };
 
 
