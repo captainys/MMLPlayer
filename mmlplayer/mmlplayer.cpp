@@ -373,6 +373,7 @@ bool MMLPlayer::InterpretMML(int chNum)
 				ch.ptr.toneEndAtInMicrosec=timeInMicrosec+noteDurationInMicrosec;
 				if('&'==ch.mml[ch.ptr.pos])
 				{
+					ch.ptr.keyOffAtInMicrosec=INFINITE;
 					++ch.ptr.pos;
 				}
 				else
@@ -421,7 +422,7 @@ bool MMLPlayer::InterpretMML(int chNum)
 		case 'L':
 			{
 				auto len=GetNumber(chNum);
-				if(len<0 || NOTE_LENGTH_MAX<len)
+				if(len<=0 || NOTE_LENGTH_MAX<len)
 				{
 					lastError.errorCode=ERROR_NOTE_LENGTH;
 					lastError.chNum=chNum;
@@ -439,13 +440,25 @@ bool MMLPlayer::InterpretMML(int chNum)
 		case 'T':
 			{
 				auto tempo=GetNumber(chNum);
-				if(tempo<0 || TEMPO_MAX<tempo)
+				if(tempo<=0 || TEMPO_MAX<tempo)
 				{
 					lastError.errorCode=ERROR_TEMPO;
 					lastError.chNum=chNum;
 					return false;
 				}
 				ch.tempo=tempo;
+			}
+			break;
+		case 'Q':
+			{
+				auto fraction=GetNumber(chNum);
+				if(fraction<0 || KEYON_TIME_FRACTION_MAX<fraction)
+				{
+					lastError.errorCode=ERROR_FRACTION;
+					lastError.chNum=chNum;
+					return false;
+				}
+				ch.keyOnTimeFraction=fraction;
 			}
 			break;
 		case '@':

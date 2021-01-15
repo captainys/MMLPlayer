@@ -86,6 +86,7 @@ public:
 		ERROR_OCTAVE,
 		ERROR_NOTE_LENGTH,
 		ERROR_TEMPO,
+		ERROR_FRACTION,
 	};
 
 	class FMInst

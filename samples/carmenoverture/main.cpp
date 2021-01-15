@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include "mmlplayer.h"
 #include "fssimplewindow.h"
 #include "yssimplesound.h"
@@ -24,9 +25,6 @@ int main(void)
 
 	YsSoundPlayer::SoundData nextWave;
 	auto rawWave=mmlplayer.GenerateWave(1000);  // Create for next 100ms
-
-	std::vector <unsigned char> entirePlayback=rawWave;
-
 	nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
 
 	for(;;)
@@ -45,17 +43,8 @@ int main(void)
 		{
 			player.AddNextStreamingSegment(stream,nextWave);
 			auto rawWave=mmlplayer.GenerateWave(1000);  /// Create for next 100ms
-			entirePlayback.insert(entirePlayback.end(),rawWave.begin(),rawWave.end());
 			nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,rawWave);
 		}
-	}
-
-	{
-		nextWave.CreateFromSigned16bitStereo(YM2612::WAVE_SAMPLING_RATE,entirePlayback);
-		auto wavData=nextWave.MakeWavByteData();
-		FILE *fp=fopen("carmenoverture.wav","wb");
-		fwrite(wavData.data(),1,wavData.size(),fp);
-		fclose(fp);
 	}
 
 	player.End();
@@ -63,1835 +52,2098 @@ int main(void)
 	return 0;
 }
 
-void SetUpMML(MMLSegmentPlayer &player)
+const std::string MML[][12]=
 {
-// At this time, only first six channels.  Eventually I'm going to make it more channels.
-
 	// ----- Main Theme
 	// ----- 1
-	player.AddSegment(
-		"q8v15t130@34",     /* チェレスタ */
-		"q8v15t130@22",     /* ハープシコード*/
-		"q8v15t130@17",     /* Electric Piano */
-		"q8v15t130@70",     /* Orchestra Brass - 5th row*/
-		"q8v15t130@2",      /* Horn - 9th row*/
-		"q8v15t130@74"     /* Cello - Alternate or unison or 9th or 5th row */
-		//,
-		//v15t130o4@1      /* Cymbal 1 */
-		//v15t130o4@1      /* Cymbal 1 */
-		//v15t130o4@2      /* Drum 1 */
-		//v15t130o4@2      /* Drum 1 */
-		//v15t130o4@3      /* Snare Drum */
-		//v15t130o4@3      /* Snare Drum */
-	);
-// 
-	player.AddSegment(
+	{
+		"q8v15t130@34",     //// チェレスタ ////
+		"q8v15t130@22",     //// ハープシコード////
+		"q8v15t130@17",     //// Electric Piano ////
+		"q8v15t130@70",     //// Orchestra Brass - 5th row////
+		"q8v15t130@2 ",     //// Horn - 9th row////
+		"q8v15t130@74",     //// Cello - Alternate or unison or 9th or 5th row ////
+		"v15t130o4@1 ",     //// Cymbal 1
+		"v15t130o4@1 ",     //// Cymbal 1
+		"v15t130o4@2 ",     //// Drum 1
+		"v15t130o4@2 ",     //// Drum 1
+		"v15t130o4@3 ",     //// Snare Drum
+		"v15t130o4@3 ",     //// Snare Drum
+	},
+	// 
+	{
 		"q5L16o5a8aaaede",
 		"q5L16o5a8aaaede",
 		"q5L16o4a8aaaede",
 		"L8o2arer",
 		"L8o3arer",
-		"L8o4rara"
-		//,
-		//"c4r4",
-		//"c4r4",
-		//"r4c4",
-		//"r4c4",
-		//"r4c4",
-		//"r4c4",
-	);
-//
-	player.AddSegment(
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
 		"L16o5a8aaabo6c+o5b",
 		"L16o5a8aaabo6c+o5b",
 		"L16o4a8aaabo5c+o4b",
 		"L8o2arer",
 		"L8o3arer",
-		"L8o4rara"
-		//,
-		//"c4r4",
-		//"c4r4",
-		//"r4c4",
-		//"r4c4",
-		//"r4c4",
-		//"r4c4",
-	);
-//
-	player.AddSegment(
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
 		"L16o5a8aabag+a",
 		"L16o5a8aabag+a",
 		"L16o4a8aabag+a",
 		"L8o2arg+r",
 		"L8o3arg+r",
-		"L8o4rarg+"
-		//,
-		//"c4r4",
-		//"c4r4",
-		//"r4c4",
-		//"r4c4",
-		//"r4c4",
-		//"r4c4",
-	);
-// TR: Vibrate with the base and base+2
-	player.AddSegment(
+		"L8o4rarg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// TR: Vibrate with the base and base+2
+	{
 		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
 		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
 		"q8L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
 		"L8o2f+rer",
 		"L8o3f+rer",
-		"L8o4rf+re"
-		//,
-		//"c4r4",
-		//"c4r4",
-		//"r4c4",
-		//"r4c4",
-		//"r4c4",
-		//"r4c4",
-	);
-// 
-	player.AddSegment(
-		"L16o6d8dddo5aga",
-		"L16o6d8dddo5aga",
-		"L16o5d8dddo4aga",
-		"o2drar",
-		"o3drar",
-		"o4rdra"
-		//,
-		//"r4",
-		//"r4",
-		//"c4",
-		//"c4",
-		//"c4",
-		//"c4",
-	);
-//  ----- 6
-	player.AddSegment(
-		"6o6d8dddef+e",
-		"6o6d8dddef+e",
-		"6o5d8dddef+e",
-		"o2drar",
-		"o3drar",
-		"o4rdra"
-		//,
-		//"r4",
-		//"r4",
-		//"c4",
-		//"c4",
-		//"c4",
-		//"c4",
-	);
+		"L8o4rf+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o6d8dddo5aga",
+		"q5L16o6d8dddo5aga",
+		"q5L16o5d8dddo4aga",
+		"L8o2drar",
+		"L8o3drar",
+		"L8o4rdra",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// ----- 6
+	{
+		"L16o6d8dddef+e",
+		"L16o6d8dddef+e",
+		"L16o5d8dddef+e",
+		"L8o2drar",
+		"L8o3drar",
+		"L8o4rdra",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6d8dc+o5b8ba",
+		"L16o6d8dc+o5b8ba",
+		"L16o5d8dc+o4b8ba",
+		"L8o2drg+r",
+		"L8o3drg+r",
+		"L8o4rdrg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q8L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"q8L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"q8L32o4g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"L8o2c+rer",
+		"L8o3c+rer",
+		"L8o4rc+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o5a8aaaede",
+		"q5L16o5a8aaaede",
+		"q5L16o4a8aaaede",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aaabo6c+o5b",
+		"L16o5a8aaabo6c+o5b",
+		"L16o4a8aaabo5c+o4b",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aabag+a",
+		"L16o5a8aabag+a",
+		"L16o4a8aabag+a",
+		"L8o2arg+r",
+		"L8o3arg+r",
+		"L8o4rarg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// ----- 12
+	{
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"L8o2f+rer",
+		"L8o3f+rer",
+		"L8o4rf+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o6e8eeq8edq5cd",
+		"q5L16o6e8eeq8edq5cd",
+		"q5L16o4e8eeq8edq5cd",
+		"L8o2crgr",
+		"L8o3cro2gr",
+		"L8o4rcrg",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6e8eeq8edq5cd",
+		"L16o6e8eeq8edq5cd",
+		"L16o4e8eeq8edq5cd",
+		"L8o2crgr",
+		"L8o3cro2gr",
+		"L8o4rcrg",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6e8o5ef+g+8eo6c+",
+		"L16o6e8o5ef+g+8eo6c+",
+		"L16o5e8o4ef+g+8eo5c+",
+		"L16o2e8o3g+g+g+8g+g+",
+		"L16o3e8eee8ee",
+		"L16o4e8eee8ee",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q8o5b4&a8r8",
+		"q8o5b4&a8r8",
+		"q8o4b4&a8r8",
+		"o3g+4a8r8",
+		"o3e4a8r8",
+		"o3r8e16e16a8r8",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// Repeat - Main Theme
+	// 
+	{
+		"q5L16o5a8aaaede",
+		"q5L16o5a8aaaede",
+		"q5L16o4a8aaaede",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aaabo6c+o5b",
+		"L16o5a8aaabo6c+o5b",
+		"L16o4a8aaabo5c+o4b",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aabag+a",
+		"L16o5a8aabag+a",
+		"L16o4a8aabag+a",
+		"L8o2arg+r",
+		"L8o3arg+r",
+		"L8o4rarg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// TR: Vibrate with the base and base+2
+	{
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"L8o2f+rer",
+		"L8o3f+rer",
+		"L8o4rf+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o6d8dddo5aga",
+		"q5L16o6d8dddo5aga",
+		"q5L16o5d8dddo4aga",
+		"L8o2drar",
+		"L8o3drar",
+		"L8o4rdra",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// ----- 6
+	{
+		"L16o6d8dddef+e",
+		"L16o6d8dddef+e",
+		"L16o5d8dddef+e",
+		"L8o2drar",
+		"L8o3drar",
+		"L8o4rdra",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6d8dc+o5b8ba",
+		"L16o6d8dc+o5b8ba",
+		"L16o5d8dc+o4b8ba",
+		"L8o2drg+r",
+		"L8o3drg+r",
+		"L8o4rdrg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q8L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"q8L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"q8L32o4g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"L8o2c+rer",
+		"L8o3c+rer",
+		"L8o4rc+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o5a8aaaede",
+		"q5L16o5a8aaaede",
+		"q5L16o4a8aaaede",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aaabo6c+o5b",
+		"L16o5a8aaabo6c+o5b",
+		"L16o4a8aaabo5c+o4b",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aabag+a",
+		"L16o5a8aabag+a",
+		"L16o4a8aabag+a",
+		"L8o2arg+r",
+		"L8o3arg+r",
+		"L8o4rarg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// ----- 12
+	{
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"L8o2f+rer",
+		"L8o3f+rer",
+		"L8o4rf+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o6e8eeq8edq5cd",
+		"q5L16o6e8eeq8edq5cd",
+		"q5L16o4e8eeq8edq5cd",
+		"L8o2crgr",
+		"L8o3cro2gr",
+		"L8o4rcrg",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6e8eeq8edq5cd",
+		"L16o6e8eeq8edq5cd",
+		"L16o4e8eeq8edq5cd",
+		"L8o2crgr",
+		"L8o3cro2gr",
+		"L8o4rcrg",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6e8o5ef+g+8eo6c+",
+		"L16o6e8o5ef+g+8eo6c+",
+		"L16o5e8o4ef+g+8eo5c+",
+		"L16o2e8o3g+g+g+8g+g+",
+		"L16o3e8eee8ee",
+		"L16o4e8eee8ee",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q8o5b4&a8r8",
+		"q8o5b4&a8r8",
+		"q8o4b4&a8r8",
+		"o3g+4a8r8",
+		"o3e4a8r8",
+		"o3r8e16e16a8r8",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// Repeat
+	// ----- 17
+	// Sub(?) theme
+	{
+		"@10v8L8o6c+f+c+o5b", //// Oboe
+		"@7 v8L8o6c+f+c+o5b", //// Flute
+		"@9 v8L8o4c+f+c+o4b", //// Clarinet
+		"@2 v8L8o3f+c+f+g+",  //// Horn
+		"v8r2@16",   //// Grand Piano
+		"v8r2@42",   //// Timpani
+		"v8",
+		"v8",
+		"v8",
+		"v8",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5ag+16f+16g+c+",
+		"L8o5ag+16f+16g+c+",
+		"L8o4ag+16f+16g+c+",
+		"L8o3ab16o4c+16o3bc+",
+		"L16r4o5q4c+c+q8c+8",
+		"L16r4o4q4c+c+q8c+8",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5f+g+ao6c+",
+		"L8o5f+g+ao6c+",
+		"L8o4f+g+ao5c+",
+		"L8o3ag+f+a",
+		"r2",
+		"r2",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o6e+d+16e+16c+o5c+",
+		"L8o6e+d+16e+16c+o5c+",
+		"L8o5e+d+16e+16c+o4c+",
+		"L8o3g+f+16g+16e+c+",
+		"L16r4q4o5c+c+q8c+8",
+		"L16r4q4o4c+c+q8c+8",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o6c+f+c+o5b",
+		"L8o6c+f+c+o5b",
+		"L8o5c+f+c+o4b",
+		"L8o3f+c+f+g+",
+		"r2",
+		"r2",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5ag+16f+16g+c+",
+		"L8o5ag+16f+16g+c+",
+		"L8o4ag+16f+16g+c+",
+		"L8o3ab16o4c+16o3bc+",
+		"L16r4o5q4c+c+q8c+8",
+		"L16r4o4q4c+c+q8c+8",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5f+g+ao6c+",
+		"L8o5f+g+ao6c+",
+		"L8o4f+g+ao5c+",
+		"L8o3ag+f+a",
+		"r2",
+		"r2",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// 24
+	{
+		"L8o6e+d+16e+16c+r",
+		"L8o6e+d+16e+16c+r",
+		"L8o5e+d+16e+16c+r",
+		"L8o3g+f+16g+16e+r",
+		"L16o5q4g+g+q8g+8c+8r8",
+		"L16o4q4g+g+q8g+8c+8r8",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"@7 v13L16o6ddd8eee8",
+		"@16v13L16o6ddd8eee8",
+		"@73v13L16o5ddd8eee8",
+		"@70v13L16o4ddd8ddd8",
+		"@70v13L16o3ddd8eee8",
+		"v13r2",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L16o6f+f+f+8ddd8",
+		"L16o6f+f+f+8ddd8",
+		"L16o5f+f+f+8ddd8",
+		"L16o4ddd8ddd8",
+		"L16o3f+f+f+8ddd8",
+		"r2",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"@10L8o6c+o5g+o6c+d",
+		"@7 L8o6c+o5g+o6c+d",
+		"@9 L8o5c+o4g+o5c+d",
+		"@2 L8o4c+o3g+o4c+d",
+		"L32o6g+a+g+a+g+a+g+a+g+a+g+a+g+a+g+a+",
+		"L16o4c+4.q4c+c+q8",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o6c+o5g+o6c+r",
+		"L8o6c+o5g+o6c+r",
+		"L8o5c+o4g+o5c+r",
+		"L8o4c+o3g+o4c+r",
+		"L32o6g+a+g+a+g+a+g+a+g+a+g+a+g+a+g+a+",
+		"o4c+4.r8",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"@7 L16o6ddd8eee8",
+		"@16L16o6ddd8eee8",
+		"@73L16o5ddd8eee8",
+		"@70L16o4ddd8ddd8",
+		"@70L16o3ddd8eee8",
+		"r2",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L16o6f+f+f+8ddd8",
+		"L16o6f+f+f+8ddd8",
+		"L16o5f+f+f+8ddd8",
+		"L16o4ddd8ddd8",
+		"L16o3f+f+f+8ddd8",
+		"r2",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// ----- 31
+	{
+		"@10v2L32o6g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+",
+		"@7 v2L32o6g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+",
+		"@9 v2L32o5g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+",
+		"@2 v2L8o3g+o2g+v3ao3a",
+		"v2L8o3g+o2g+v3ao3a",
+		"v2L16o4r8q4c+c+v3q8c+4",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"v5L32o6g+a+g+a+g+a+v7g+a+g+a+g+a+g+a+g+a+",
+		"v5L32o6g+a+g+a+g+a+v7g+a+g+a+g+a+g+a+g+a+",
+		"v5L32o5g+a+g+a+g+a+v7g+a+g+a+g+a+g+a+g+a+",
+		"v5L8o3a+o3c+v7db",
+		"v5L8o3a+o3c+v7db",
+		"v5L16o4r8q4c+c+v7q8c+4",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"v9L32o6g+a+g+a+g+a+v11g+a+g+a+g+a+g+a+g+a+",
+		"v9L32o6g+a+g+a+g+a+v11g+a+g+a+g+a+g+a+g+a+",
+		"v9L32o5g+a+g+a+g+a+v11g+a+g+a+g+a+g+a+g+a+",
+		"v9L8o3b+d+v11eo4c+",
+		"v9L8o3b+d+v11eo4c+",
+		"v9L16o4r8q4c+c+v11q8c+4",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"v13L32o6g+a+g+a+g+a+v15g+a+g+a+g+a+@34L16gg+",
+		"v13L32o6g+a+g+a+g+a+v15g+a+g+a+g+a+@22L16gg+",
+		"v13L32o5g+a+g+a+g+a+v15g+a+g+a+g+a+@17L16gg+",
+		"v13L8o4do3dv15d+e",
+		"v13L8o4do3dv15d+e",
+		"v13L16o4r8q4c+c+v15q8c+4",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// Main Theme
+	{
+		"@34v15L16q5o6a8o5aaaede",
+		"@22v15L16q5o6a8o5aaaede",
+		"@17v15L16q5o4a8aaaede",
+		"@70v15L8o2arer",
+		"@2 v15L8o3arer",
+		"@74v15L8o4rara",
+		"@1v15c4r4",
+		"@1v15c4r4",
+		"@2v15r4c4",
+		"@2v15r4c4",
+		"@3v15r4c4",
+		"@3v15r4c4",
+	},
+	//
+	{
+		"L16o5a8aaabo6c+o5b",
+		"L16o5a8aaabo6c+o5b",
+		"L16o4a8aaabo5c+o4b",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aabag+a",
+		"L16o5a8aabag+a",
+		"L16o4a8aabag+a",
+		"L8o2arg+r",
+		"L8o3arg+r",
+		"L8o4rarg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// ----- 38
+	{
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"L8o2f+rer",
+		"L8o3f+rer",
+		"L8o4rf+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o6d8dddo5aga",
+		"q5L16o6d8dddo5aga",
+		"q5L16o5d8dddo4aga",
+		"L8o2drar",
+		"L8o3drar",
+		"L8o4rdra",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6d8dddef+e",
+		"L16o6d8dddef+e",
+		"L16o5d8dddef+e",
+		"L8o2drar",
+		"L8o3drar",
+		"L8o4rdra",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6d8dc+o5b8ba",
+		"L16o6d8dc+o5b8ba",
+		"L16o5d8dc+o4b8ba",
+		"L8o2drg+r",
+		"L8o3drg+r",
+		"L8o4rdrg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q8L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"q8L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"q8L32o4g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"L8o2c+rer",
+		"L8o3c+rer",
+		"L8o4rc+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o5a8aaaede",
+		"q5L16o5a8aaaede",
+		"q5L16o4a8aaaede",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aaabo6c+o5b",
+		"L16o5a8aaabo6c+o5b",
+		"L16o4a8aaabo5c+o4b",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// ---- 45
+	{
+		"L16o5a8aabag+a",
+		"L16o5a8aabag+a",
+		"L16o4a8aabag+a",
+		"L8o2arg+r",
+		"L8o3arg+r",
+		"L8o4rarg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"L8o2f+rer",
+		"L8o3f+rer",
+		"L8o4rf+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16q5o6e8eeq8edq5cd",
+		"L16q5o6e8eeq8edq5cd",
+		"L16q5o4e8eeq8edq5cd",
+		"L8o2crgr",
+		"L8o3cro2gr",
+		"L8o4rcrg",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6e8eeq8edq5cd",
+		"L16o6e8eeq8edq5cd",
+		"L16o4e8eeq8edq5cd",
+		"L8o2crgr",
+		"L8o3cro2gr",
+		"L8o4rcrg",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6e8o5ef+g+8eo6c+",
+		"L16o6e8o5ef+g+8eo6c+",
+		"L16o5e8o4ef+g+8eo5c+",
+		"L16o2e8o3g+g+g+8g+g+",
+		"L16o3e8eee8ee",
+		"L16o4e8eee8ee",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q8o5b4&a8r8",
+		"q8o5b4&a8r8",
+		"q8o4b4&a8r8",
+		"o3g+4a8r8",
+		"o3e4a8r8",
+		"o3r8e16e16a8r8",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// Second theme
+	// ----- Change Instruments
+	{
+		"v9t130@72",     //// Violin 1 ////
+		"v9t130@73",     //// Violin 2 ////
+		"v9t130@70",     //// Orchestra ////
+		"v9t130@70",     //// Orchestra ////
+		"v9t130@5",      //// Tronbone ////
+		"v9t130@2",      //// Horn ////
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"r2",
+		"r2",
+		"r2",
+		"r2",
+		"L8o4frfr",
+		"L8o3frfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// ----- 52
+	{
+		"r2",
+		"r2",
+		"r2",
+		"r2",
+		"L8o4frfr",
+		"L8o3frfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"r2",
+		"r2",
+		"r2",
+		"r2",
+		"L8o4frfr",
+		"L8o3frfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"r2",
+		"r2",
+		"r2",
+		"r2",
+		"L8o4frfr",
+		"L8o3frfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L4o5cd8.c16",
+		"L4o4cd8.c16",
+		"L4o5cd8.c16",
+		"r2",
+		"L8o4frfr",
+		"L8o3frfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L4o4aa",
+		"L4o3aa",
+		"L4o4aa",
+		"r2",
+		"L8o4frfr",
+		"L8o3frfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L16o4b-32a32&a&aga8.b-",
+		"L16o3b-32a32&a&aga8.b-",
+		"L16o4b-32a32&a&aga8.b-",
+		"r2",
+		"L8o4frfr",
+		"L8o3frfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L4o4a4.r8",
+		"L4o3a4.r8",
+		"L4o4a4.r8",
+		"r2",
+		"L8o4frfr",
+		"L8o3frfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L4o4b-g8.o5c16",
+		"L4o3b-g8.o4c16",
+		"L4o4b-g8.o5c16",
+		"r2",
+		"L8o4grcr",
+		"L8o3grcr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// ----- 60
+	{
+		"o4a2",
+		"o3a2",
+		"o4a2",
+		"r2",
+		"L8o4frer",
+		"L8o3frer",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L4o4fd8.g16",
+		"L4o3fd8.g16",
+		"L4o4fd8.g16",
+		"r2",
+		"L8o4dro3g",
+		"L8o3dro2g",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L4o4c4.r8",
+		"L4o3c4.r8",
+		"L4o4c4.r8",
+		"r2",
+		"L8o4cro5cr",
+		"L8o3cro4cr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o4g2",
+		"o3g2",
+		"o4g2",
+		"r2",
+		"L8o3b-ro4er",
+		"L8o2b-ro3er",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o4go5dco4b-",
+		"L8o3go4dco3b-",
+		"L8o4go5dco4b-",
+		"r2",
+		"L8o3b-rgr",
+		"L8o2b-rgr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o4b-32a32&a16gab-",
+		"L8o3b-32a32&a16gab-",
+		"L8o4b-32a32&a16gab-",
+		"r2",
+		"L8o3fra",
+		"L8o2fra",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o4a4.r8",
+		"o3a4.r8",
+		"o4a4.r8",
+		"r2",
+		"L8o4drfr",
+		"L8o3drfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L4o4ea",
+		"L4o3ea",
+		"L4o4ea",
+		"r2",
+		"L8o4ercr",
+		"L8o3ercr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L4o4ag+8.b16",
+		"L4o3ag+8.b16",
+		"L4o4ag+8.b16",
+		"r2",
+		"L8o3bro4er",
+		"L8o2bro3er",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o5e2&",
+		"o4e2&",
+		"o5e2&",
+		"r2",
+		"L8o3aro4er",
+		"L8o2aro3er",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o5e2&",
+		"o4e2&",
+		"o5e2&",
+		"r2",
+		"L8o4c+ro3a",
+		"L8o3c+ro2a",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"v13L8o5ed24e24d24c+d",
+		"v13L8o4ed24e24d24c+d",
+		"v13L8o5ed24e24d24c+d",
+		"v15r2",
+		"v15L8o3b-ro4dr",
+		"v15L8o2b-ro3dr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o4gab-4&",
+		"L8o3gab-4&",
+		"L8o4gab-4&",
+		"r2",
+		"L8o4b-rfr",
+		"L8o3b-rfr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o4b-a24b-24a24fo5d",
+		"L8o3b-a24b-24a24fo4d",
+		"L8o4b-a24b-24a24fo5d",
+		"r2",
+		"o4cr8r4",
+		"o3cr8r4",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// ----- 74
+	{
+		"o5c4.r8",
+		"o4c4.r8",
+		"o5c4.r8",
+		"v9L8r8o5a24b-24a24fo6d",
+		"v9L8r8o4a24b-24a24fo5d",
+		"v9L8r8o5a24b-24a24fo6d",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"v9L8ro4f24g24f24cb-",
+		"v9L8ro3f24g24f24cb-",
+		"v9L8ro4f24g24f24cb-",
+		"o6c8r8r4",
+		"o5c8r8r4",
+		"o6c8r8r4",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o4a4g32a32g16&g8",
+		"o3a4g32a32g16&g8",
+		"o4a4g32a32g16&g8",
+		"r4o3c8r8",
+		"r4o3c8r8",
+		"r4o3c8r8",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// - Second theme last half
+	{
+		"o4f8@22v15L16o5cdefga",
+		"o3f8@23v15L16o4cdefga",
+		"o4f8@35v15L16o5cdefga",
+		"  r8@70v15L16o4cdefga",    //// Orchestra ////
+		"  r8@5 v15L16o3cdefga",    //// Tronbone ////
+		"  r8@70v15L16o4cdefga",    //// Orchestra ////
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L16o5b-ab-o6cdefg",
+		"L16o4b-ab-o5cdefg",
+		"L16o5b-ab-o6cdefg",
+		"L16o4b-o5cdefgab-",
+		"L16o3b-o4cdefgab-",
+		"L16o4b-o5cdefgab-",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o6crdr16c16",
+		"L8o5crdr16c16",
+		"L8o6crdr16c16",
+		"L8o6cr8dr16c16",
+		"L8o4cr8dr16c16",
+		"@2 L8o3frcr",    //// Horn ////
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// ----- 80
+	{
+		"L8o5arar",
+		"L8o4arar",
+		"L8o5arar",
+		"L8o5arar",
+		"L8o3arar",
+		"L8o3frcr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5b-32a32&a16r16g16ar16b-16",
+		"L8o4b-32a32&a16r16g16ar16b-16",
+		"L8o5b-32a32&a16r16g16ar16b-16",
+		"L8o5b-32a32&a16r16g16ar16b-16",
+		"L8o3b-32a32&a16r16g16ar16b-16",
+		"L8o3frcr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o5a4.r8",
+		"o4a4.r8",
+		"o5a4.r8",
+		"o5a4.r8",
+		"o3a4.r8",
+		"L8o3frcr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5b-r8gr16o6c16",
+		"L8o4b-r8gr16o5c16",
+		"L8o5b-r8gr16o6c16",
+		"L8o5b-r8gr16o6c16",
+		"L8o3b-r8gr16o4c16",
+		"L8o3grcr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o5a4.r8",
+		"o4a4.r8",
+		"o5a4.r8",
+		"o5a4.r8",
+		"o3a4.r8",
+		"L8o3frcr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5frdr16g16",
+		"L8o4frdr16g16",
+		"L8o5frdr16g16",
+		"L8o5frdr16g16",
+		"L8o3frdr16g16",
+		"L8o3dro2gr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o5c4.r8",
+		"o4c4.r8",
+		"o5c4.r8",
+		"o5c4.r8",
+		"o3c4.r8",
+		"L8o3cro4cr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// ----- 87
+	{
+		"v9o5g2",
+		"v9o4g2",
+		"v9o5g2",
+		"v9o5g2",
+		"v9o3g2",
+		"v9L8o3b-ro4dr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5go6dco5b-",
+		"L8o4go5dco4b-",
+		"L8o5go6dco5b-",
+		"L8o5go6dco5b-",
+		"L8o3go4dco3b-",
+		"L8o3b-rgr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5b-32a32&a16gab-",
+		"L8o4b-32a32&a16gab-",
+		"L8o5b-32a32&a16gab-",
+		"L8o5b-32a32&a16gab-",
+		"L8o3b-32a32&a16gab-",
+		"L8o3frar",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o5a4.r8",
+		"o4a4.r8",
+		"o5a4.r8",
+		"o5a4.r8",
+		"o3a4.r8",
+		"L8o3frdr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L4o5ea",
+		"L4o4ea",
+		"L4o5ea",
+		"L4o5ea",
+		"L4o3ea",
+		"L8o3ero4cr",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o5a4g+8.b16",
+		"o4a4g+8.b16",
+		"o5a4g+8.b16",
+		"o5a4g+8.b16",
+		"o3a4g+8.b16",
+		"L8o3brer",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L32o7ef+ef+ef+ef+ef+ef+d+16e16",
+		"L32o6ef+ef+ef+ef+ef+ef+d+16e16",
+		"L32o5ef+ef+ef+ef+ef+ef+d+16e16",
+		"L32o6ef+ef+ef+ef+ef+ef+d+16e16",
+		"L32o5ef+ef+ef+ef+ef+ef+d+16e16",
+		"L8o3arer",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// ----- 94
+	{
+		"L32o7fg+fg+fg+fg+fg+fg+e16f16",
+		"L32o6fg+fg+fg+fg+fg+fg+e16f16",
+		"L32o5fg+fg+fg+fg+fg+fg+e16f16",
+		"L32o6fg+fg+fg+fg+fg+fg+e16f16",
+		"L32o5fg+fg+fg+fg+fg+fg+e16f16",
+		"L8o3c+ro2ar",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o6g+16r16f+24g+24f+24e+f+",
+		"L8o5g+16r16f+24g+24f+24e+f+",
+		"L8o6g+16r16f+24g+24f+24e+f+",
+		"L8o6g+16r16f+24g+24f+24e+f+",
+		"L8o3g+16r16f+24g+24f+24e+f+",
+		"L8o3drf+r",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o5bo6c+d4&",
+		"L8o4bo5c+d4&",
+		"L8o5bo6c+d4&",
+		"L8o5bo6c+d4&",
+		"L8o3bo6c+d4&",
+		"L8o3dro2ar",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o6d16r16c+24d24c+24o5ao6f+",
+		"L8o5d16r16c+24d24c+24o4ao5f+",
+		"L8o6d16r16c+24d24c+24o5ao6f+",
+		"L8o6d16r16c+24d24c+24o5ao6f+",
+		"L8o4d16r16c+24d24c+24o3ao4f+",
+		"L8o2c+r8r4",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"o6e4.r8",
+		"o5e4.r8",
+		"o6e4.r8",
+		"o6e4.r8",
+		"v13L8ro4e16e16ee",
+		"v13L8ro3e16e16ee",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"v15L8ro5a24b24a24eo6d",
+		"v15L8ro4a24b24a24eo5d",
+		"v15L8ro5a24b24a24eo6d",
+		"v15L8ro5a24b24a24eo6d",
+		"v15L8ro3a24b24a24eo4d",
+		"v15o3e8r8r4",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	//
+	{
+		"L8o6c+ro5br",
+		"L8o5c+ro4br",
+		"L8o6c+ro5br",
+		"L8o4c+ro3br",
+		"L8o4c+ro3br",
+		"L8o3r4er",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// ----- Main Theme Pattern 2
+	// ----- 101
+	{
+		"v15t130@34",     //// チェレスタ ////
+		"v15t130@22",     //// ハープシコード////
+		"v15t130@17",     //// Electric Piano ////
+		"v15t130@70",     //// Orchestra Brass - 5th row////
+		"v15t130@2",      //// Horn - 9th row////
+		"v15t130@74",     //// Cello - Alternate or unison or 9th or 5th row ////
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	},
+	// 
+	{
+		"L16q5o5a8aaaede",
+		"L16q5o5a8aaaede",
+		"L16q5o4a8aaaede",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aaabo6c+o5b",
+		"L16o5a8aaabo6c+o5b",
+		"L16o4a8aaabo5c+o4b",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aabag+a",
+		"L16o5a8aabag+a",
+		"L16o4a8aabag+a",
+		"L8o2arg+r",
+		"L8o3arg+r",
+		"L8o4rarg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// TR: Vibrate with the base and base+2
+	{
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"L8o2f+rer",
+		"L8o3f+rer",
+		"L8o4rf+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o6d8dddo5aga",
+		"q5L16o6d8dddo5aga",
+		"q5L16o5d8dddo4aga",
+		"L8o2drar",
+		"L8o3drar",
+		"L8o4rdra",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6d8dddef+e",
+		"L16o6d8dddef+e",
+		"L16o5d8dddef+e",
+		"L8o2drar",
+		"L8o3drar",
+		"L8o4rdra",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6d8dc+o5b8ba",
+		"L16o6d8dc+o5b8ba",
+		"L16o5d8dc+o4b8ba",
+		"L8o2drg+r",
+		"L8o3drg+r",
+		"L8o4rdrg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// ----- 108
+	{
+		"q8L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"q8L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"q8L32o4g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
+		"L8o2c+rer",
+		"L8o3c+rer",
+		"L8o4rc+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q5L16o5a8aaaede",
+		"q5L16o5a8aaaede",
+		"q5L16o4a8aaaede",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aaabo6c+o5b",
+		"L16o5a8aaabo6c+o5b",
+		"L16o4a8aaabo5c+o4b",
+		"L8o2arer",
+		"L8o3arer",
+		"L8o4rara",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o5a8aabag+a",
+		"L16o5a8aabag+a",
+		"L16o4a8aabag+a",
+		"L8o2arg+r",
+		"L8o3arg+r",
+		"L8o4rarg+",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"q8L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b",
+		"L8o2f+rer",
+		"L8o3f+rer",
+		"L8o4rf+re",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16q5o6e8eeq8edq5cd",
+		"L16q5o6e8eeq8edq5cd",
+		"L16q5o4e8eeq8edq5cd",
+		"L8o2crgr",
+		"L8o3cro2gr",
+		"L8o4rcrg",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	// ----- 114
+	{
+		"L16o6e8eeq8edq5cd",
+		"L16o6e8eeq8edq5cd",
+		"L16o4e8eeq8edq5cd",
+		"L8o2crgr",
+		"L8o3cro2gr",
+		"L8o4rcrg",
+		"c4r4",
+		"c4r4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+		"r4c4",
+	},
+	//
+	{
+		"L16o6q8edq5cdq8edq5cd",
+		"L16o6q8edq5cdq8edq5cd",
+		"L16o4q8edq5cdq8edq5cd",
+		"L8o2cgcg",
+		"L8o3co2go3co2g",
+		"L8o4cgcg",
+		"c4c4",
+		"c4c4",
+		"c4c4",
+		"c4c4",
+		"c4c4",
+		"c4c4",
+	},
+	//
+	{
+		"L16o6q8edq5cdq8edq5cd",
+		"L16o6q8edq5cdq8edq5cd",
+		"L16o4q8edq5cdq8edq5cd",
+		"L8o2cgcg",
+		"L8o3co2go3co2g",
+		"L8o4cgcg",
+		"c4c4",
+		"c4c4",
+		"c4c4",
+		"c4c4",
+		"c4c4",
+		"c4c4",
+	},
+	//
+	{
+		"q8L32o6ef+ef+ef+ef+ef+ef+ef+ef+",
+		"q8L32o6ef+ef+ef+ef+ef+ef+ef+ef+",
+		"q8L32o4ef+ef+ef+ef+ef+ef+ef+ef+",
+		"L16o3e8eee12e12e12",
+		"L16o2e8eee12e12e12",
+		"L16o3e8eee12e12e12",
+		"",
+		"",
+		"",
+		"",
+		"L32cccccccccccccccc",
+		"L32cccccccccccccccc",
+	},
+	//
+	{
+		"L32o6ef+ef+ef+ef+d+32e32&e16e8",
+		"L32o6ef+ef+ef+ef+d+32e32&e16e8",
+		"L32o4ef+ef+ef+ef+d+32e32&e16e8",
+		"L12o3eeee8e8",
+		"L12o2eeee8e8",
+		"L12o3eeee8e8",
+		"",
+		"",
+		"",
+		"",
+		"L32cccccccccccccccc",
+		"L32cccccccccccccccc",
+	},
+	//
+	{
+		"L8o6aro5ar",
+		"L8o6aro5ar",
+		"L8o4aro3ar",
+		"L8o5ero4ar",
+		"L8o5c+ro4ar",
+		"L8o2aro3ar",
+		"c8",
+		"c8",
+		"c8",
+		"c8",
+		"c8",
+		"c8",
+	},
+};
 
-	player.AddSegment(
-		"6o6d8dc+o5b8ba",
-		"6o6d8dc+o5b8ba",
-		"6o5d8dc+o4b8ba",
-		"o2drg+r",
-		"o3drg+r",
-		"o4rdrg+"
-		//,
-		//"r4",
-		//"r4",
-		//"c4",
-		//"c4",
-		//"c4",
-		//"c4",
-	);
-
-	player.AddSegment(
-		"L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
-		"L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
-		"L32o4g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+",
-		"o2c+rer",
-		"o3c+rer",
-		"o4rc+re"
-		//,
-		//"r4",
-		//"r4",
-		//"c4",
-		//"c4",
-		//"c4",
-		//"c4",
-	);
-// 
-// L16o5a8aaaede
-// L16o5a8aaaede
-// L16o4a8aaaede
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aaabo6c+o5b
-// 6o5a8aaabo6c+o5b
-// 6o4a8aaabo5c+o4b
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aabag+a
-// 6o5a8aabag+a
-// 6o4a8aabag+a
-// o2arg+r
-// o3arg+r
-// o4rarg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  ----- 12
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// o2f+rer
-// o3f+rer
-// o4rf+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L16o6e8eeq8edq5cd
-// L16o6e8eeq8edq5cd
-// L16o4e8eeq8edq5cd
-// o2crgr
-// o3cro2gr
-// o4rcrg
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6e8eeq8edq5cd
-// 6o6e8eeq8edq5cd
-// 6o4e8eeq8edq5cd
-// o2crgr
-// o3cro2gr
-// o4rcrg
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6e8o5ef+g+8eo6c+
-// 6o6e8o5ef+g+8eo6c+
-// 6o5e8o4ef+g+8eo5c+
-// 6o2e8o3g+g+g+8g+g+
-// 6o3e8eee8ee
-// 6o4e8eee8ee
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// o5b4&a8r8
-// o5b4&a8r8
-// o4b4&a8r8
-// g+4a8r8
-// e4a8r8
-// r8e16e16a8r8
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  Repeat - Main Theme
-//  
-// L16o5a8aaaede
-// L16o5a8aaaede
-// L16o4a8aaaede
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aaabo6c+o5b
-// 6o5a8aaabo6c+o5b
-// 6o4a8aaabo5c+o4b
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aabag+a
-// 6o5a8aabag+a
-// 6o4a8aabag+a
-// o2arg+r
-// o3arg+r
-// o4rarg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  TR: Vibrate with the base and base+2
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// o2f+rer
-// o3f+rer
-// o4rf+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L16o6d8dddo5aga
-// L16o6d8dddo5aga
-// L16o5d8dddo4aga
-// o2drar
-// o3drar
-// o4rdra
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  ----- 6
-// 6o6d8dddef+e
-// 6o6d8dddef+e
-// 6o5d8dddef+e
-// o2drar
-// o3drar
-// o4rdra
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6d8dc+o5b8ba
-// 6o6d8dc+o5b8ba
-// 6o5d8dc+o4b8ba
-// o2drg+r
-// o3drg+r
-// o4rdrg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+
-// L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+
-// L32o4g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+
-// o2c+rer
-// o3c+rer
-// o4rc+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L16o5a8aaaede
-// L16o5a8aaaede
-// L16o4a8aaaede
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aaabo6c+o5b
-// 6o5a8aaabo6c+o5b
-// 6o4a8aaabo5c+o4b
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aabag+a
-// 6o5a8aabag+a
-// 6o4a8aabag+a
-// o2arg+r
-// o3arg+r
-// o4rarg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  ----- 12
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// o2f+rer
-// o3f+rer
-// o4rf+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L16o6e8eeq8edq5cd
-// L16o6e8eeq8edq5cd
-// L16o4e8eeq8edq5cd
-// o2crgr
-// o3cro2gr
-// o4rcrg
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6e8eeq8edq5cd
-// 6o6e8eeq8edq5cd
-// 6o4e8eeq8edq5cd
-// o2crgr
-// o3cro2gr
-// o4rcrg
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6e8o5ef+g+8eo6c+
-// 6o6e8o5ef+g+8eo6c+
-// 6o5e8o4ef+g+8eo5c+
-// 6o2e8o3g+g+g+8g+g+
-// 6o3e8eee8ee
-// 6o4e8eee8ee
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// o5b4&a8r8
-// o5b4&a8r8
-// o4b4&a8r8
-// g+4a8r8
-// e4a8r8
-// r8e16e16a8r8
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  Repeat
-//  ----- 17
-//  Sub(?) theme
-// 0v8L8o6c+f+c+o5b /* Oboe */
-//  v8L8o6c+f+c+o5b /* Flute */
-//  v8L8o4c+f+c+o4b /* Clarinet */
-//  v8L8o3f+c+f+g+  /* Horn */
-// r2@16   /* Grand Piano */
-// r2@42   /* Timpani */
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5ag+16f+16g+c+
-// o5ag+16f+16g+c+
-// o4ag+16f+16g+c+
-// o3ab16o4c+16o3bc+
-// 6r4o5q4c+c+q8c+8
-// 6r4o4q4c+c+q8c+8
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5f+g+ao6c+
-// o5f+g+ao6c+
-// o4f+g+ao5c+
-// o3ag+f+a
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o6e+d+16e+16c+o5c+
-// o6e+d+16e+16c+o5c+
-// o5e+d+16e+16c+o4c+
-// o3g+f+16g+16e+c+
-// 6r4q4o5c+c+q8c+8
-// 6r4q4o4c+c+q8c+8
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o6c+f+c+o5b
-// o6c+f+c+o5b
-// o5c+f+c+o4b
-// o3f+c+f+g+
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5ag+16f+16g+c+
-// o5ag+16f+16g+c+
-// o4ag+16f+16g+c+
-// o3ab16o4c+16o3bc+
-// 6r4o5q4c+c+q8c+8
-// 6r4o4q4c+c+q8c+8
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5f+g+ao6c+
-// o5f+g+ao6c+
-// o4f+g+ao5c+
-// o3ag+f+a
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-//  24
-// o6e+d+16e+16c+r
-// o6e+d+16e+16c+r
-// o5e+d+16e+16c+r
-// o3g+f+16g+16e+r
-// 6o5q4g+g+q8g+8c+8r8
-// 6o4q4g+g+q8g+8c+8r8
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-//  v13L16o6ddd8eee8
-// 6v13L16o6ddd8eee8
-// 3v13L16o5ddd8eee8
-// 0v13L16o4ddd8ddd8
-// 0v13L16o3ddd8eee8 /* Temporarily row 5 */
-// 3r2
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 6o6f+f+f+8ddd8
-// 6o6f+f+f+8ddd8
-// 6o5f+f+f+8ddd8
-// 6o4ddd8ddd8
-// 6o3f+f+f+8ddd8 /* Temporarily row 5 */
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 0L8o6c+o5g+o6c+d
-//  L8o6c+o5g+o6c+d
-//  L8o5c+o4g+o5c+d
-//  L8o4c+o3g+o4c+d
-// 2o6g+a+g+a+g+a+g+a+g+a+g+a+g+a+g+a+
-// 6o4c+4.q4c+c+q8
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o6c+o5g+o6c+r
-// o6c+o5g+o6c+r
-// o5c+o4g+o5c+r
-// o4c+o3g+o4c+r
-// 2o6g+a+g+a+g+a+g+a+g+a+g+a+g+a+g+a+
-// c+4.r8
-// 
-// 
-// 
-// 
-// 
-// 
-//  L16o6ddd8eee8
-// 6L16o6ddd8eee8
-// 3L16o5ddd8eee8
-// 0L16o4ddd8ddd8
-// 0L16o3ddd8eee8 /* Temporarily row 5 */
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-//  
-// 6o6f+f+f+8ddd8
-// 6o6f+f+f+8ddd8
-// 6o5f+f+f+8ddd8
-// 6o4ddd8ddd8
-// 6o3f+f+f+8ddd8 /* Temporarily row 5 */
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-//  ----- 31
-// 0v2L32o6g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+
-//  v2L32o6g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+
-//  v2L32o5g+a+g+a+g+a+v3g+a+g+a+g+a+g+a+g+a+
-//  v2L8o3g+o2g+v3ao3a
-// L8o3g+o2g+v3ao3a
-// L16o4r8q4c+c+v3q8c+4
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// L32o6g+a+g+a+g+a+v7g+a+g+a+g+a+g+a+g+a+
-// L32o6g+a+g+a+g+a+v7g+a+g+a+g+a+g+a+g+a+
-// L32o5g+a+g+a+g+a+v7g+a+g+a+g+a+g+a+g+a+
-// L8o3a+o3c+v7db
-// L8o3a+o3c+v7db
-// L16o4r8q4c+c+v7q8c+4
-// 
-// 
-// 
-// 
-// 
-// 
-//  
-// L32o6g+a+g+a+g+a+v11g+a+g+a+g+a+g+a+g+a+
-// L32o6g+a+g+a+g+a+v11g+a+g+a+g+a+g+a+g+a+
-// L32o5g+a+g+a+g+a+v11g+a+g+a+g+a+g+a+g+a+
-// L8o3b+d+v11eo4c+
-// L8o3b+d+v11eo4c+
-// L16o4r8q4c+c+v11q8c+4
-// 
-// 
-// 
-// 
-// 
-// 
-//  
-// 3L32o6g+a+g+a+g+a+v15g+a+g+a+g+a+@34L16gg+
-// 3L32o6g+a+g+a+g+a+v15g+a+g+a+g+a+@22L16gg+
-// 3L32o5g+a+g+a+g+a+v15g+a+g+a+g+a+@17L16gg+
-// 3L8o4do3dv15d+e
-// 3L8o4do3dv15d+e
-// 3L16o4r8q4c+c+v15q8c+4
-// 
-// 
-// 
-// 
-// 
-// 
-//  Main Theme
-// 4v15L16q5o6a8o5aaaede
-// 2v15L16q5o6a8o5aaaede
-// 7v15L16q5o4a8aaaede
-// 0v15L8o2arer
-//  v15L8o3arer
-// 4v15L8o4rara
-// v15c4r4
-// v15c4r4
-// v15r4c4
-// v15r4c4
-// v15r4c4
-// v15r4c4
-//  
-// 6o5a8aaabo6c+o5b
-// 6o5a8aaabo6c+o5b
-// 6o4a8aaabo5c+o4b
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  
-// 6o5a8aabag+a
-// 6o5a8aabag+a
-// 6o4a8aabag+a
-// o2arg+r
-// o3arg+r
-// o4rarg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  ----- 38
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// o2f+rer
-// o3f+rer
-// o4rf+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  
-// L16o6d8dddo5aga
-// L16o6d8dddo5aga
-// L16o5d8dddo4aga
-// o2drar
-// o3drar
-// o4rdra
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6d8dddef+e
-// 6o6d8dddef+e
-// 6o5d8dddef+e
-// o2drar
-// o3drar
-// o4rdra
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6d8dc+o5b8ba
-// 6o6d8dc+o5b8ba
-// 6o5d8dc+o4b8ba
-// o2drg+r
-// o3drg+r
-// o4rdrg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+
-// L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+
-// L32o4g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+
-// o2c+rer
-// o3c+rer
-// o4rc+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L16o5a8aaaede
-// L16o5a8aaaede
-// L16o4a8aaaede
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aaabo6c+o5b
-// 6o5a8aaabo6c+o5b
-// 6o4a8aaabo5c+o4b
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  ---- 45
-// 6o5a8aabag+a
-// 6o5a8aabag+a
-// 6o4a8aabag+a
-// o2arg+r
-// o3arg+r
-// o4rarg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// o2f+rer
-// o3f+rer
-// o4rf+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6q5o6e8eeq8edq5cd
-// 6q5o6e8eeq8edq5cd
-// 6q5o4e8eeq8edq5cd
-// o2crgr
-// o3cro2gr
-// o4rcrg
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6e8eeq8edq5cd
-// 6o6e8eeq8edq5cd
-// 6o4e8eeq8edq5cd
-// o2crgr
-// o3cro2gr
-// o4rcrg
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6e8o5ef+g+8eo6c+
-// 6o6e8o5ef+g+8eo6c+
-// 6o5e8o4ef+g+8eo5c+
-// 6o2e8o3g+g+g+8g+g+
-// 6o3e8eee8ee
-// 6o4e8eee8ee
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// o5b4&a8r8
-// o5b4&a8r8
-// o4b4&a8r8
-// g+4a8r8
-// e4a8r8
-// r8e16e16a8r8
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  Second theme
-//  ----- Change Instruments
-// t130@72     /* Violin 1 */
-// t130@73     /* Violin 2 */
-// t130@70     /* Orchestra */
-// t130@70     /* Orchestra */
-// t130@5      /* Tronbone */
-// t130@2      /* Horn */
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4frfr
-// o3frfr
-// 
-// 
-// 
-// 
-// 
-// 
-//  ----- 52
-// 
-// 
-// 
-// 
-// o4frfr
-// o3frfr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4frfr
-// o3frfr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4frfr
-// o3frfr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5cd8.c16
-// o4cd8.c16
-// o5cd8.c16
-// 
-// o4frfr
-// o3frfr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4aa
-// o3aa
-// o4aa
-// 
-// o4frfr
-// o3frfr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 6o4b-32a32&a&aga8.b-
-// 6o3b-32a32&a&aga8.b-
-// 6o4b-32a32&a&aga8.b-
-// 
-// o4frfr
-// o3frfr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4a4.r8
-// o3a4.r8
-// o4a4.r8
-// 
-// o4frfr
-// o3frfr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4b-g8.o5c16
-// o3b-g8.o4c16
-// o4b-g8.o5c16
-// 
-// o4grcr
-// o3grcr
-// 
-// 
-// 
-// 
-// 
-// 
-//  ----- 60
-// a2
-// a2
-// a2
-// 
-// o4frer
-// o3frer
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4fd8.g16
-// o3fd8.g16
-// o4fd8.g16
-// 
-// o4dro3g
-// o3dro2g
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4c4.r8
-// o3c4.r8
-// o4c4.r8
-// 
-// o4cro5cr
-// o3cro4cr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// g2
-// g2
-// g2
-// 
-// o3b-ro4er
-// o2b-ro3er
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4go5dco4b-
-// o3go4dco3b-
-// o4go5dco4b-
-// 
-// o3b-rgr
-// o2b-rgr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4b-32a32&a16gab-
-// o3b-32a32&a16gab-
-// o4b-32a32&a16gab-
-// 
-// o3fra
-// o2fra
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// a4.r8
-// a4.r8
-// a4.r8
-// 
-// o4drfr
-// o3drfr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4ea
-// o3ea
-// o4ea
-// 
-// o4ercr
-// o3ercr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4ag+8.b16
-// o3ag+8.b16
-// o4ag+8.b16
-// 
-// o3bro4er
-// o2bro3er
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// e2&
-// e2&
-// e2&
-// 
-// o3aro4er
-// o2aro3er
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// e2&
-// e2&
-// e2&
-// 
-// o4c+ro3a
-// o3c+ro2a
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 3L8o5ed24e24d24c+d
-// 3L8o4ed24e24d24c+d
-// 3L8o5ed24e24d24c+d
-// 5r2
-// 5L8o3b-ro4dr
-// 5L8o2b-ro3dr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4gab-4&
-// o3gab-4&
-// o4gab-4&
-// 
-// o4b-rfr
-// o3b-rfr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o4b-a24b-24a24fo5d
-// o3b-a24b-24a24fo4d
-// o4b-a24b-24a24fo5d
-// 
-// cr8r4
-// cr8r4
-// 
-// 
-// 
-// 
-// 
-// 
-//  ----- 74
-// c4.r8
-// c4.r8
-// c4.r8
-// L8r8o5a24b-24a24fo6d
-// L8r8o4a24b-24a24fo5d
-// L8r8o5a24b-24a24fo6d
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// L8ro4f24g24f24cb-
-// L8ro3f24g24f24cb-
-// L8ro4f24g24f24cb-
-// c8r8r4
-// c8r8r4
-// c8r8r4
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// a4g32a32g16&g8
-// a4g32a32g16&g8
-// a4g32a32g16&g8
-// o3c8r8
-// o3c8r8
-// o3c8r8
-// 
-// 
-// 
-// 
-// 
-// 
-//  - Second theme last half
-// f8@22v15L16o5cdefga
-// f8@23v15L16o4cdefga
-// f8@35v15L16o5cdefga
-// r8@70v15L16o4cdefga    /* Orchestra */
-// r8@5 v15L16o3cdefga    /* Tronbone */
-// r8@70v15L16o4cdefga    /* Orchestra */
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 6o5b-ab-o6cdefg
-// 6o4b-ab-o5cdefg
-// 6o5b-ab-o6cdefg
-// 6o4b-o5cdefgab-
-// 6o3b-o4cdefgab-
-// 6o4b-o5cdefgab-
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o6crdr16c16
-// o5crdr16c16
-// o6crdr16c16
-// o6cr8dr16c16
-// o4cr8dr16c16
-//  L8o3frcr    /* Horn */
-// 
-// 
-// 
-// 
-// 
-// 
-//  ----- 80
-// o5arar
-// o4arar
-// o5arar
-// o5arar
-// o3arar
-// o3frcr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5b-32a32&a16r16g16ar16b-16
-// o4b-32a32&a16r16g16ar16b-16
-// o5b-32a32&a16r16g16ar16b-16
-// o5b-32a32&a16r16g16ar16b-16
-// o3b-32a32&a16r16g16ar16b-16
-// o3frcr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// a4.r8
-// a4.r8
-// a4.r8
-// a4.r8
-// a4.r8
-// o3frcr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5b-r8gr16o6c16
-// o4b-r8gr16o5c16
-// o5b-r8gr16o6c16
-// o5b-r8gr16o6c16
-// o3b-r8gr16o4c16
-// o3grcr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// a4.r8
-// a4.r8
-// a4.r8
-// a4.r8
-// a4.r8
-// o3frcr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5frdr16g16
-// o4frdr16g16
-// o5frdr16g16
-// o5frdr16g16
-// o3frdr16g16
-// o3dro2gr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// c4.r8
-// c4.r8
-// c4.r8
-// c4.r8
-// c4.r8
-// o3cro4cr
-// 
-// 
-// 
-// 
-// 
-// 
-//  ----- 87
-// o5g2
-// o4g2
-// o5g2
-// o5g2
-// o3g2
-// L8o3b-ro4dr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5go6dco5b-
-// o4go5dco4b-
-// o5go6dco5b-
-// o5go6dco5b-
-// o3go4dco3b-
-// o3b-rgr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5b-32a32&a16gab-
-// o4b-32a32&a16gab-
-// o5b-32a32&a16gab-
-// o5b-32a32&a16gab-
-// o3b-32a32&a16gab-
-// o3frar
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// a4.r8
-// a4.r8
-// a4.r8
-// a4.r8
-// a4.r8
-// o3frdr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5ea
-// o4ea
-// o5ea
-// o5ea
-// o3ea
-// o3ero4cr
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// a4g+8.b16
-// a4g+8.b16
-// a4g+8.b16
-// a4g+8.b16
-// a4g+8.b16
-// o3brer
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 2o7ef+ef+ef+ef+ef+ef+d+16e16
-// 2o6ef+ef+ef+ef+ef+ef+d+16e16
-// 2o5ef+ef+ef+ef+ef+ef+d+16e16
-// 2o6ef+ef+ef+ef+ef+ef+d+16e16
-// 2o5ef+ef+ef+ef+ef+ef+d+16e16
-// o3arer
-// 
-// 
-// 
-// 
-// 
-// 
-//  ----- 94
-// 2o7fg+fg+fg+fg+fg+fg+e16f16
-// 2o6fg+fg+fg+fg+fg+fg+e16f16
-// 2o5fg+fg+fg+fg+fg+fg+e16f16
-// 2o6fg+fg+fg+fg+fg+fg+e16f16
-// 2o5fg+fg+fg+fg+fg+fg+e16f16
-// o3c+ro2ar
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o6g+16r16f+24g+24f+24e+f+
-// o5g+16r16f+24g+24f+24e+f+
-// o6g+16r16f+24g+24f+24e+f+
-// o6g+16r16f+24g+24f+24e+f+
-// o3g+16r16f+24g+24f+24e+f+
-// o3drf+r
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o5bo6c+d4&
-// o4bo5c+d4&
-// o5bo6c+d4&
-// o5bo6c+d4&
-// o3bo6c+d4&
-// o3dro2ar
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o6d16r16c+24d24c+24o5ao6f+
-// o5d16r16c+24d24c+24o4ao5f+
-// o6d16r16c+24d24c+24o5ao6f+
-// o6d16r16c+24d24c+24o5ao6f+
-// o4d16r16c+24d24c+24o3ao4f+
-// o2c+r8r4
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// e4.r8
-// e4.r8
-// e4.r8
-// e4.r8
-// 3L8ro4e16e16ee
-// 3L8ro3e16e16ee
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 5L8ro5a24b24a24eo6d
-// 5L8ro4a24b24a24eo5d
-// 5L8ro5a24b24a24eo6d
-// 5L8ro5a24b24a24eo6d
-// 5L8ro3a24b24a24eo4d
-// 5o3e8r8r4
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// o6c+ro5br
-// o5c+ro4br
-// o6c+ro5br
-// o4c+ro3br
-// o4c+ro3br
-// o3r4er
-// 
-// 
-// 
-// 
-// 
-// 
-//  ----- Main Theme Pattern 2
-//  ----- 101
-// 5t130@34     /* チェレスタ */
-// 5t130@22     /* ハープシコード*/
-// 5t130@17     /* Electric Piano */
-// 5t130@70     /* Orchestra Brass - 5th row*/
-// 5t130@2      /* Horn - 9th row*/
-// 5t130@74     /* Cello - Alternate or unison or 9th or 5th row */
-// 
-// 
-// 
-// 
-// 
-// 
-//  
-// 6q5o5a8aaaede
-// 6q5o5a8aaaede
-// 6q5o4a8aaaede
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aaabo6c+o5b
-// 6o5a8aaabo6c+o5b
-// 6o4a8aaabo5c+o4b
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aabag+a
-// 6o5a8aabag+a
-// 6o4a8aabag+a
-// o2arg+r
-// o3arg+r
-// o4rarg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  TR: Vibrate with the base and base+2
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// o2f+rer
-// o3f+rer
-// o4rf+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L16o6d8dddo5aga
-// L16o6d8dddo5aga
-// L16o5d8dddo4aga
-// o2drar
-// o3drar
-// o4rdra
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6d8dddef+e
-// 6o6d8dddef+e
-// 6o5d8dddef+e
-// o2drar
-// o3drar
-// o4rdra
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6d8dc+o5b8ba
-// 6o6d8dc+o5b8ba
-// 6o5d8dc+o4b8ba
-// o2drg+r
-// o3drg+r
-// o4rdrg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  ----- 108
-// L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+
-// L32o5g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+
-// L32o4g+a+g+a+g+a+g+a+g+a+g+a+L16f+g+
-// o2c+rer
-// o3c+rer
-// o4rc+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L16o5a8aaaede
-// L16o5a8aaaede
-// L16o4a8aaaede
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aaabo6c+o5b
-// 6o5a8aaabo6c+o5b
-// 6o4a8aaabo5c+o4b
-// o2arer
-// o3arer
-// o4rara
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o5a8aabag+a
-// 6o5a8aabag+a
-// 6o4a8aabag+a
-// o2arg+r
-// o3arg+r
-// o4rarg+
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o5b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// L32o4b>c+<b>c+<b>c+<b>c+<b>c+<b>c+<L16a+b
-// o2f+rer
-// o3f+rer
-// o4rf+re
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6q5o6e8eeq8edq5cd
-// 6q5o6e8eeq8edq5cd
-// 6q5o4e8eeq8edq5cd
-// o2crgr
-// o3cro2gr
-// o4rcrg
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-//  ----- 114
-// 6o6e8eeq8edq5cd
-// 6o6e8eeq8edq5cd
-// 6o4e8eeq8edq5cd
-// o2crgr
-// o3cro2gr
-// o4rcrg
-// r4
-// r4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6q8edq5cdq8edq5cd
-// 6o6q8edq5cdq8edq5cd
-// 6o4q8edq5cdq8edq5cd
-// o2cgcg
-// o3co2go3co2g
-// o4cgcg
-// c4
-// c4
-// c4
-// c4
-// c4
-// c4
-// 
-// 6o6q8edq5cdq8edq5cd
-// 6o6q8edq5cdq8edq5cd
-// 6o4q8edq5cdq8edq5cd
-// o2cgcg
-// o3co2go3co2g
-// o4cgcg
-// c4
-// c4
-// c4
-// c4
-// c4
-// c4
-// 
-// L32o6ef+ef+ef+ef+ef+ef+ef+ef+
-// L32o6ef+ef+ef+ef+ef+ef+ef+ef+
-// L32o4ef+ef+ef+ef+ef+ef+ef+ef+
-// 6o3e8eee12e12e12
-// 6o2e8eee12e12e12
-// 6o3e8eee12e12e12
-// 
-// 
-// 
-// 
-// 2cccccccccccccccc
-// 2cccccccccccccccc
-// 
-// 2o6ef+ef+ef+ef+d+32e32&e16e8
-// 2o6ef+ef+ef+ef+d+32e32&e16e8
-// 2o4ef+ef+ef+ef+d+32e32&e16e8
-// 2o3eeee8e8
-// 2o2eeee8e8
-// 2o3eeee8e8
-// 
-// 
-// 
-// 
-// 2cccccccccccccccc
-// 2cccccccccccccccc
-// 
-// o6aro5ar
-// o6aro5ar
-// o4aro3ar
-// o5ero4ar
-// o5c+ro4ar
-// o2aro3ar
-// 
-// 
-// 
-// 
-// 
-// 
+void SetUpMML(MMLSegmentPlayer &player)
+{
+// At this time, only first six channels.  Eventually I'm going to make it more channels.
+	for(int i=0; i<sizeof(MML)/sizeof(MML[0]); ++i)
+	{
+		player.AddSegment(
+			MML[i][0],
+			MML[i][1],
+			MML[i][2],
+			MML[i][3],
+			MML[i][4],
+			MML[i][5]
+		);
+	}
 }
