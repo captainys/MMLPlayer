@@ -86,7 +86,6 @@ const std::string MML[][12]=
 		"v15t130o4@3 ",     //
 		"v15t130o4@3 ",     //
 	},
-/*
 	// 
 	{
 		"q5L16o5a8aaaede",
@@ -568,7 +567,6 @@ const std::string MML[][12]=
 		"r4c4",
 		"r4c4",
 	},
-*/
 	// Repeat
 	// ----- 17
 	// Sub(?) theme
@@ -1084,12 +1082,12 @@ const std::string MML[][12]=
 	// Second theme
 	// ----- Change Instruments
 	{
-		"v9t130@72",     //// Violin 1 ////
-		"v9t130@73",     //// Violin 2 ////
-		"v9t130@70",     //// Orchestra ////
-		"v9t130@70",     //// Orchestra ////
-		"v9t130@5",      //// Tronbone ////
-		"v9t130@2",      //// Horn ////
+		"v9t130@1",      // E.Piano
+		"v9t130@7",      // Oboe
+		"v9t130@6",      // Organ
+		"v9t130@8",      // Clarinet
+		"v9t130@5",      // Harpsichord
+		"v9t130@2",      // Piano
 		"",
 		"",
 		"",
@@ -1337,11 +1335,13 @@ const std::string MML[][12]=
 		"",
 		"",
 	},
-	//
+	// Original score keeps mp here, but in actual stage play,
+	// vocalist sings with a strong accent here.
+	// I think when playing instrumental, it should go crescendo all the way up to ff.
 	{
-		"L4o4ea",
-		"L4o3ea",
-		"L4o4ea",
+		"v11L4o4ea",
+		"v11L4o3ea",
+		"v11L4o4ea",
 		"r2",
 		"L8o4ercr",
 		"L8o3ercr",
@@ -1354,9 +1354,9 @@ const std::string MML[][12]=
 	},
 	//
 	{
-		"L4o4ag+8.b16",
-		"L4o3ag+8.b16",
-		"L4o4ag+8.b16",
+		"v13L4o4ag+8.b16",
+		"v13L4o3ag+8.b16",
+		"v13L4o4ag+8.b16",
 		"r2",
 		"L8o3bro4er",
 		"L8o2bro3er",
@@ -1369,9 +1369,9 @@ const std::string MML[][12]=
 	},
 	//
 	{
-		"o5e2&",
-		"o4e2&",
-		"o5e2&",
+		"v15o5e2&",
+		"v15o4e2&",
+		"v15o5e2&",
 		"r2",
 		"L8o3aro4er",
 		"L8o2aro3er",
@@ -1489,12 +1489,12 @@ const std::string MML[][12]=
 	},
 	// - Second theme last half
 	{
-		"o4f8@22v15L16o5cdefga",
-		"o3f8@23v15L16o4cdefga",
-		"o4f8@35v15L16o5cdefga",
-		"  r8@70v15L16o4cdefga",    //// Orchestra ////
-		"  r8@5 v15L16o3cdefga",    //// Tronbone ////
-		"  r8@70v15L16o4cdefga",    //// Orchestra ////
+		"o4f8@6 v15L16o5cdefga",   // Organ
+		"o3f8@19v15L16o4cdefga",   // Electric
+		"o4f8@1v15L16o5cdefga",    // E.Piano
+		"  r8@7v15L16o4cdefga",    // Oboe
+		"  r8@5v15L16o3cdefga",    // Hapsichord
+		"  r8@8v15L16o4cdefga",    // Clarinet
 		"",
 		"",
 		"",
@@ -1524,7 +1524,7 @@ const std::string MML[][12]=
 		"L8o6crdr16c16",
 		"L8o6cr8dr16c16",
 		"L8o4cr8dr16c16",
-		"@2 L8o3frcr",    //// Horn ////
+		"L8o3frcr",
 		"",
 		"",
 		"",
