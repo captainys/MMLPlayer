@@ -271,6 +271,16 @@ public:
 	/*!
 	*/
 	int GetCurrentSegment(void) const;
+
+
+
+	/*! Not implemented yet.  Just for placeholder.
+	*/
+	void SetRepeat(bool repeat);
+
+	/*! Not implemented yet.  Just for placeholder.
+	*/
+	bool GetRepeat(void) const;
 };
 
 
