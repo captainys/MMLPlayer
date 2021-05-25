@@ -8,6 +8,9 @@
 #include <cstdint>
 #include <ym2612.h>
 
+#ifdef INFINITE
+#undef INFINITE
+#endif
 
 /*
 Default tones:
