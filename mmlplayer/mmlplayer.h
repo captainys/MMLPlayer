@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <ym2612.h>
+#include "ym2612.h"
 
 #ifdef INFINITE
 #undef INFINITE
