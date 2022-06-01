@@ -436,7 +436,9 @@ int main(void)
 	player.Start();
 
 	YsSoundPlayer::Stream stream;
-	player.StartStreaming(stream);
+	YsSoundPlayer::StreamingOption streamOpt;
+	streamOpt.ringBufferLengthMillisec=4000;
+	player.StartStreaming(stream,streamOpt);
 
 	YsSoundPlayer::SoundData nextWave;
 	auto rawWave=mmlplayer.GenerateWave(1000);  // Create for next 100ms
