@@ -6,8 +6,11 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <ym2612.h>
+#include "ym2612.h"
 
+#ifdef INFINITE
+#undef INFINITE
+#endif
 
 /*
 Default tones:
@@ -271,6 +274,16 @@ public:
 	/*!
 	*/
 	int GetCurrentSegment(void) const;
+
+
+
+	/*! Not implemented yet.  Just for placeholder.
+	*/
+	void SetRepeat(bool repeat);
+
+	/*! Not implemented yet.  Just for placeholder.
+	*/
+	bool GetRepeat(void) const;
 };
 
 
