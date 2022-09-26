@@ -1,2 +1,2 @@
 add_executable(test_genwave test_genwave.cpp)
-target_link_libraries(test_genwave mmlplayer yssimplesound yssimplesound_nownd)
+target_link_libraries(test_genwave mmlplayer yssimplesound_nownd)
