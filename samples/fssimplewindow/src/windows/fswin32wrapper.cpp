@@ -290,13 +290,24 @@ void FsCloseWindow(void)
 
 void FsMaximizeWindow(void)
 {
+	auto style=GetWindowLong(fsWin32Internal.hWnd,GWL_STYLE);
+	style=(style|WS_THICKFRAME|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_MAXIMIZEBOX);
+	SetWindowLong(fsWin32Internal.hWnd,GWL_STYLE,style);
 	ShowWindow(fsWin32Internal.hWnd,SW_MAXIMIZE);
 }
 void FsUnmaximizeWindow(void)
 {
+	auto style=GetWindowLong(fsWin32Internal.hWnd,GWL_STYLE);
+	style=(style|WS_THICKFRAME|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_MAXIMIZEBOX);
+	SetWindowLong(fsWin32Internal.hWnd,GWL_STYLE,style);
+	ShowWindow(fsWin32Internal.hWnd,SW_RESTORE);
 }
 void FsMakeFullScreen(void)
 {
+	auto style=GetWindowLong(fsWin32Internal.hWnd,GWL_STYLE);
+	style=(style&~(WS_THICKFRAME|WS_BORDER|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_MAXIMIZEBOX));
+	SetWindowLong(fsWin32Internal.hWnd,GWL_STYLE,style);
+	ShowWindow(fsWin32Internal.hWnd,SW_MAXIMIZE);
 }
 
 void FsGetWindowSize(int &wid,int &hei)
@@ -1177,4 +1188,27 @@ void FsGetNativeTextInputText(wchar_t str[],int bufLen)
 int FsGetNativeTextInputEvent(void)
 {
 	return FSNATIVETEXTEVENT_NONE;
+}
+
+void FsShowMouseCursor(int showFlag)
+{
+	// Win32 mouse cursor visibility is controlled by a counter.
+	// ShowCursor(TRUE) increments and ShowCursor(FALSE) decrements the counter by one,
+	// and returns the updated counter value.
+	// Cursor is visible if the counter is greater or equal to zero.
+	if(0!=showFlag)
+	{
+		while(ShowCursor(TRUE)<0);
+	}
+	else
+	{
+		while(0<=ShowCursor(FALSE));
+	}
+}
+
+int FsIsMouseCursorVisible(void)
+{
+	ShowCursor(TRUE);
+	auto ctr=ShowCursor(FALSE);
+	return 0<=ctr;
 }

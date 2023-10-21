@@ -207,7 +207,13 @@ FSKEY_NUM_KEYCODE
 	#endif
 
 	#ifndef FSSIMPLEWINDOW_DONT_INCLUDE_OPENGL_HEADERS
-		#ifdef _WIN32
+		#ifdef YS_TESTCOMPILE_VC
+			#define APIENTRY
+			#define WINGDIAPI
+			#define CALLBACK
+			#include <GL/gl.h>
+			#include <GL/glu.h>
+		#elif defined(_WIN32)
 			#ifndef WIN32_LEAN_AND_MEAN
 				// Prevent inclusion of winsock.h
 				#define WIN32_LEAN_AND_MEAN
@@ -409,6 +415,10 @@ void FsRegisterPollDeviceCallBack(void (*callback)(void *),void *param);
 void FsGetWindowSize(int &wid,int &hei);
 void FsGetWindowPosition(int &x0,int &y0);
 void FsSetWindowTitle(const char windowTitle[]);
+
+void FsShowMouseCursor(int showFlag);
+int FsIsMouseCursorVisible(void);
+
 void FsPollDevice(void);
 void FsSleep(int ms);
 long long int FsPassedTime(void);

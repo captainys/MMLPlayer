@@ -60,7 +60,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define FS_NUM_XK 65536
 
 extern void FsXCreateKeyMapping(void);
-extern int FsXKeySymToFskey(int keysym);
+extern int FsXKeySymToFsInkey(int keysym);
+extern int FsXKeySymToFsGetKeyState(int keysym);
 extern char FsXKeySymToChar(int keysym);
 extern int FsXFskeyToKeySym(int fskey);
 
@@ -141,6 +142,9 @@ void FsOpenWindow(const FsOpenWindowOption &opt)
 		fsKeyPress[n]=0;
 	}
 
+	// Apparently XInitThread is requierd even if only one thread is accessing X-Window system, unless that thread is the main thread.
+	// Weird.
+	XInitThreads();
 	ysXDsp=XOpenDisplay(NULL);
 
 	if(ysXDsp!=NULL)
@@ -220,6 +224,15 @@ void FsOpenWindow(const FsOpenWindowOption &opt)
 					printf("Zzz...\n");
 					sleep(1);
 					printf("Slept one second.\n");
+
+					if(opt.sizeOpt==FsOpenWindowOption::FULLSCREEN)
+					{
+						FsMakeFullScreen();
+					}
+					else if(opt.sizeOpt==FsOpenWindowOption::MAXIMIZE_WINDOW)
+					{
+						FsMaximizeWindow();
+					}
 
 					/* printf("Wait Expose Event\n");
 					XEvent ev;
@@ -437,7 +450,12 @@ void FsSetWindowTitle(const char windowTitle[])
 
 void FsPollDevice(void)
 {
-	int i,fsKey;
+	if(NULL==ysXWnd)
+	{
+		return;
+	}
+
+	int i,fsKey,fsKey2;
 	char chr;
 	KeySym ks;
 	XEvent ev;
@@ -543,22 +561,11 @@ void FsPollDevice(void)
 		{
 			ks=ks+XK_A-XK_a;
 		}
-		if(ks==XK_Alt_R)
-		{
-			ks=XK_Alt_L;
-		}
-		if(ks==XK_Shift_R)
-		{
-			ks=XK_Shift_L;
-		}
-		if(ks==XK_Control_R)
-		{
-			ks=XK_Control_L;
-		}
 
 		if(0<=ks && ks<FS_NUM_XK)
 		{
-			fsKey=FsXKeySymToFskey(ks); // mapXKtoFSKEY[ks];
+			fsKey=FsXKeySymToFsInkey(ks); // mapXKtoFSKEY[ks];
+			fsKey2=FsXKeySymToFsGetKeyState(ks);
 
 			// 2005/03/29 >>
 			if(fsKey==0)
@@ -572,22 +579,11 @@ void FsPollDevice(void)
 					{
 						ks=ks+XK_A-XK_a;
 					}
-					if(ks==XK_Alt_R)
-					{
-						ks=XK_Alt_L;
-					}
-					if(ks==XK_Shift_R)
-					{
-						ks=XK_Shift_L;
-					}
-					if(ks==XK_Control_R)
-					{
-						ks=XK_Control_L;
-					}
 
 					if(0<=ks && ks<FS_NUM_XK)
 					{
-						fsKey=FsXKeySymToFskey(ks); // mapXKtoFSKEY[ks];
+						fsKey=FsXKeySymToFsInkey(ks); // mapXKtoFSKEY[ks];
+						fsKey2=FsXKeySymToFsGetKeyState(ks);
 					}
 				}
 			}
@@ -596,6 +592,10 @@ void FsPollDevice(void)
 			if(ev.type==KeyPress && fsKey!=0)
 			{
 				fsKeyPress[fsKey]=1;
+				if(FSKEY_NULL!=fsKey2)
+				{
+					fsKeyPress[fsKey2]=1;
+				}
 				if(ev.xkey.window==ysXWnd) // 2005/04/08
 				{
 					if(nKeyBufUsed<NKEYBUF)
@@ -611,6 +611,10 @@ void FsPollDevice(void)
 			else
 			{
 				fsKeyPress[fsKey]=0;
+				if(FSKEY_NULL!=fsKey2)
+				{
+					fsKeyPress[fsKey2]=0;
+				}
 			}
 		}
 	}
@@ -814,18 +818,47 @@ void FsCloseWindow(void)
 	XCloseDisplay(ysXDsp);
 }
 
+static void FsChangeWindowState(int setOrRemove,const char propertyName[])
+{
+	Atom _NET_WM_STATE=XInternAtom(ysXDsp,"_NET_WM_STATE",False);
+	Atom _NET_WM_STATE_ADD=XInternAtom(ysXDsp,"_NET_WM_STATE_ADD",False); // Somehow doesn't work
+	Atom _NET_WM_STATE_REMOVE=XInternAtom(ysXDsp,"_NET_WM_STATE_REMOVE",False); // Somehow doesn't work
+	Atom _NET_WM_STATE_Property=XInternAtom(ysXDsp,propertyName,False);
+
+	// From https://pyra-handheld.com/boards/threads/x11-fullscreen-howto.70443/
+	XEvent evt;
+	evt.xclient.type=ClientMessage;
+	evt.xclient.serial=0;
+	evt.xclient.send_event=True;
+	evt.xclient.window=ysXWnd;
+	evt.xclient.message_type=_NET_WM_STATE;
+	evt.xclient.format=32;
+	evt.xclient.data.l[0]=setOrRemove;
+	evt.xclient.data.l[1]=_NET_WM_STATE_Property;
+	evt.xclient.data.l[2]=0;
+	evt.xclient.data.l[3]=0;
+	evt.xclient.data.l[4]=0;
+	XSendEvent(ysXDsp,RootWindow(ysXDsp,ysXVis->screen),False,SubstructureRedirectMask|SubstructureNotifyMask,&evt);
+}
+
 void FsMaximizeWindow(void)
 {
-	printf("Sorry. %s not supported on this platform yet\n",__FUNCTION__);
+	FsChangeWindowState(0,"_NET_WM_STATE_FULLSCREEN");
+	FsChangeWindowState(1,"_NET_WM_STATE_MAXIMIZED_HORZ");
+	FsChangeWindowState(1,"_NET_WM_STATE_MAXIMIZED_VERT");
 }
 
 void FsUnmaximizeWindow(void)
 {
-	printf("Sorry. %s not supported on this platform yet\n",__FUNCTION__);
+	FsChangeWindowState(0,"_NET_WM_STATE_MAXIMIZED_HORZ");
+	FsChangeWindowState(0,"_NET_WM_STATE_MAXIMIZED_VERT");
+	FsChangeWindowState(0,"_NET_WM_STATE_FULLSCREEN");
 }
 void FsMakeFullScreen(void)
 {
-	printf("Sorry. %s not supported on this platform yet\n",__FUNCTION__);
+	FsChangeWindowState(0,"_NET_WM_STATE_MAXIMIZED_HORZ");
+	FsChangeWindowState(0,"_NET_WM_STATE_MAXIMIZED_VERT");
+	FsChangeWindowState(1,"_NET_WM_STATE_FULLSCREEN");
 }
 
 void FsSleep(int ms)
@@ -1279,4 +1312,12 @@ void FsGetNativeTextInputText(wchar_t str[],int bufLen)
 int FsGetNativeTextInputEvent(void)
 {
 	return FSNATIVETEXTEVENT_NONE;
+}
+
+void FsShowMouseCursor(int showFlag)
+{
+}
+int FsIsMouseCursorVisible(void)
+{
+	return 1;
 }
