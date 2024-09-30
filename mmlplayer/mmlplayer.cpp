@@ -115,6 +115,7 @@ MMLPlayer::MMLPlayer()
 
 void MMLPlayer::Clear(void)
 {
+	lastError.Clear();
 	ClearMML();
 	LoadFMB(defaultFMB);
 	for(int chNum=0; chNum<NUM_CHANNELS; ++chNum)
